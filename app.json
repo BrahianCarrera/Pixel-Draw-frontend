@@ -1,0 +1,99 @@
+{
+  "expo": {
+    "name": "PixelDraw",
+    "slug": "pixeldraw",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "pixeldraw",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.brahiancx.pixeldraw"
+    },
+    "android": {
+      "package": "com.brahiancx.pixeldraw",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/images/android-icon-foreground.png"
+      },
+      "softwareKeyboardLayoutMode": "resize"
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#e11d48",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 100
+        }
+      ],
+      [
+        "expo-widgets",
+        {
+          "groupIdentifier": "group.com.brahiancx.pixeldraw",
+          "enableAndroid": true,
+          "widgets": [
+            {
+              "name": "LatestDrawWidget",
+              "displayName": "Último Dibujo",
+              "description": "Muestra el último dibujo de tu pareja",
+              "supportedFamilies": [
+                "systemSmall",
+                "systemMedium",
+                "systemLarge"
+              ],
+              "contentMarginsDisabled": false,
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium",
+                  "systemLarge"
+                ]
+              },
+              "android": {
+                "minWidth": 120,
+                "minHeight": 120,
+                "targetCellWidth": 2,
+                "targetCellHeight": 2,
+                "resizeMode": "both"
+              }
+            }
+          ]
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "ExpoWidgetsTarget",
+                  "bundleIdentifier": "com.brahiancx.pixeldraw.ExpoWidgetsTarget",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.brahiancx.pixeldraw"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "bc2172a7-5ed0-43b6-8fe2-aa6ebe890a1d"
+      }
+    }
+  }
+}

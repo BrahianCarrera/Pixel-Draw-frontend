@@ -6,11 +6,9 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
 import { TamaguiProvider, Theme, View } from 'tamagui';
-import { AuthProvider } from '../context/auth-context';
-import { ServerStatusProvider } from '../context/server-status-context';
-import { ServerStatusBanner } from '../components/ui/ServerStatusBanner';
 import tamaguiConfig from '../../tamagui.config';
 import { Heart } from '../components/icons';
+import { DemoArtworkProvider } from '../context/demo-artwork-context';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -34,9 +32,7 @@ export default function RootLayout() {
           <StatusBar
             style={isDark ? 'light' : 'dark'}
           />
-          <ServerStatusProvider>
-            <AuthProvider>
-              <ServerStatusBanner />
+          <DemoArtworkProvider>
               <SafeAreaView
                 style={{
                   flex: 1,
@@ -73,7 +69,7 @@ export default function RootLayout() {
                 <Stack.Screen
                   name="auth"
                   options={{
-                    title: 'Cuenta & Acceso',
+                    title: 'Demo Portfolio',
                     presentation: 'modal',
                     animation: 'slide_from_bottom',
                   }}
@@ -81,25 +77,24 @@ export default function RootLayout() {
                 <Stack.Screen
                   name="draw"
                   options={{
-                    title: 'Lienzo de Dibujo',
+                    title: 'Editor Pixel Art',
                   }}
                 />
                 <Stack.Screen
                   name="gallery"
                   options={{
-                    title: 'Galería de Pareja',
+                    title: 'Galería Demo',
                   }}
                 />
                 <Stack.Screen
                   name="couple"
                   options={{
-                    title: 'Mi Pareja',
+                    title: 'Modo Demo',
                   }}
                 />
               </Stack>
             </SafeAreaView>
-          </AuthProvider>
-        </ServerStatusProvider>
+          </DemoArtworkProvider>
       </Theme>
     </TamaguiProvider>
   </SafeAreaProvider>

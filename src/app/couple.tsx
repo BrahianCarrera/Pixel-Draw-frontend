@@ -1,422 +1,84 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  ScrollView,
-  Alert,
-  Platform,
-  ToastAndroid,
-  KeyboardAvoidingView,
-  Keyboard,
-  Pressable,
-  RefreshControl,
-} from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
-import {
-  YStack,
-  XStack,
-  Text,
-  Button,
-  Card,
-  Paragraph,
-  H3,
-  Separator,
-  Spinner,
-} from 'tamagui';
-import { Heart, Copy, UserCheck, UserPlus, LogOut, RefreshCw } from '../components/icons';
-import { useAuth } from '../context/auth-context';
-import { api } from '../services/api';
-import { ThemedInput } from '../components/ui/ThemedInput';
+import React from 'react';
+import { ScrollView } from 'react-native';
+import { useRouter } from 'expo-router';
+import { YStack, XStack, Text, Button, Card, Paragraph, H3, Separator } from 'tamagui';
+import { Heart, UserCheck, Paintbrush, ImageIcon } from '../components/icons';
 
 export default function CoupleScreen() {
   const router = useRouter();
-  const { user, couple, refreshProfile, syncNow, logout } = useAuth();
-
-  const [inviteCodeInput, setInviteCodeInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [statusMsg, setStatusMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
-
-  // Sincronizar inmediatamente al abrir la pantalla
-  useFocusEffect(
-    useCallback(() => {
-      syncNow();
-    }, [syncNow])
-  );
-
-  const isWaitingPartner = couple && (!couple.members || couple.members.length < 2);
-
-  const onRefresh = useCallback(async () => {
-    setIsRefreshing(true);
-    try {
-      await syncNow();
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [syncNow]);
-
-  const handleCreateCouple = async () => {
-    if (!user) return;
-    try {
-      setIsLoading(true);
-      setStatusMsg(null);
-      await api.couples.create(user.id);
-      await refreshProfile();
-      setStatusMsg({
-        type: 'success',
-        text: '¡Pareja creada! Comparte el código de invitación con tu pareja.',
-      });
-    } catch (err: any) {
-      setStatusMsg({ type: 'error', text: err.message || 'Error al crear la pareja.' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleJoinCouple = async () => {
-    if (!user) return;
-    if (!inviteCodeInput.trim()) {
-      setStatusMsg({ type: 'error', text: 'Por favor ingresa un código de invitación.' });
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setStatusMsg(null);
-      await api.couples.join(user.id, inviteCodeInput.trim().toUpperCase());
-      await refreshProfile();
-      setStatusMsg({
-        type: 'success',
-        text: '¡Te has vinculado exitosamente con tu pareja! ❤️',
-      });
-      setInviteCodeInput('');
-    } catch (err: any) {
-      setStatusMsg({ type: 'error', text: err.message || 'Error al unirse a la pareja.' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRegenerateCode = async () => {
-    if (!couple || !user) return;
-    try {
-      setIsLoading(true);
-      setStatusMsg(null);
-      await api.couples.regenerateCode(couple.id, user.id);
-      await refreshProfile();
-      setStatusMsg({ type: 'success', text: 'Nuevo código generado con éxito.' });
-    } catch (err: any) {
-      setStatusMsg({ type: 'error', text: err.message || 'Error al regenerar código.' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleLeaveCouple = async () => {
-    if (!user) return;
-
-    const performLeave = async () => {
-      try {
-        setIsLoading(true);
-        await api.couples.leave(user.id);
-        await refreshProfile();
-        setStatusMsg({ type: 'success', text: 'Te has desvinculado de la pareja.' });
-      } catch (err: any) {
-        setStatusMsg({ type: 'error', text: err.message || 'Error al desvincularte.' });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (Platform.OS === 'web') {
-      if (confirm('¿Estás seguro de que deseas desvincularte de tu pareja?')) {
-        performLeave();
-      }
-    } else {
-      Alert.alert(
-        'Desvincular pareja',
-        '¿Estás seguro de que deseas desvincularte de tu pareja?',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Desvincular', style: 'destructive', onPress: performLeave },
-        ]
-      );
-    }
-  };
-
-  const copyToClipboard = (text: string) => {
-    if (Platform.OS === 'web' && navigator?.clipboard) {
-      navigator.clipboard.writeText(text);
-      alert('¡Código copiado al portapapeles!');
-    } else if (Platform.OS === 'android') {
-      ToastAndroid.show(`Código ${text} copiado al portapapeles ❤️`, ToastAndroid.SHORT);
-    } else {
-      Alert.alert('Código Copiado', `El código ${text} ha sido copiado.`);
-    }
-  };
-
-  if (!user) {
-    return (
-      <YStack flex={1} justifyContent="center" alignItems="center" padding="$4" gap="$3">
-        <Heart size={48} color="#e11d48" />
-        <H3 textAlign="center">Inicia sesión para gestionar tu pareja</H3>
-        <Button theme="active" backgroundColor="#e11d48" color="white" onPress={() => router.push('/auth')}>
-          Iniciar Sesión
-        </Button>
-      </YStack>
-    );
-  }
-
-  const partner = couple?.members?.find((m) => m.id !== user.id);
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
-      style={{ flex: 1 }}
+    <ScrollView
+      contentContainerStyle={{
+        flexGrow: 1,
+        padding: 20,
+        paddingBottom: 40,
+        justifyContent: 'center',
+      }}
+      showsVerticalScrollIndicator={false}
     >
-      <Pressable onPress={Keyboard.dismiss} accessible={false} style={{ flex: 1 }}>
-        <ScrollView
-          contentContainerStyle={{
-            padding: 20,
-            paddingBottom: Platform.OS === 'android' ? 60 : 40,
-          }}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={onRefresh}
-              colors={['#e11d48']}
-            />
-          }
-        >
       <YStack gap="$4" maxWidth={440} width="100%" alignSelf="center">
-        {/* Encabezado */}
         <YStack alignItems="center" gap="$2">
           <Heart size={36} color="#e11d48" />
-          <XStack alignItems="center" gap="$2">
-            <H3 textAlign="center">Estado de Pareja</H3>
-            <Button
-              size="$2"
-              chromeless
-              icon={isRefreshing ? <Spinner size="small" /> : <RefreshCw size={16} />}
-              disabled={isRefreshing || isLoading}
-              onPress={onRefresh}
-              accessibilityLabel="Actualizar estado"
-            />
-          </XStack>
+          <H3 textAlign="center">Modo portfolio</H3>
           <Paragraph size="$2" color="$colorFocus" textAlign="center">
-            Conectado como <Text fontWeight="bold">@{user.username}</Text>
+            La conexión de pareja está representada con datos de ejemplo para mantener la demo
+            rápida, privada y sin servidor.
           </Paragraph>
         </YStack>
 
-        {statusMsg && (
-          <Card
-            backgroundColor={
-              statusMsg.type === 'success'
-                ? 'rgba(34, 197, 94, 0.15)'
-                : 'rgba(225, 29, 72, 0.15)'
-            }
-            padding="$3"
-            borderRadius="$3"
-          >
-            <Paragraph
-              color={statusMsg.type === 'success' ? '#22c55e' : '#f43f5e'}
-              size="$2"
-              textAlign="center"
-            >
-              {statusMsg.text}
-            </Paragraph>
-          </Card>
-        )}
+        <Card borderWidth={1} borderColor="$borderColor" padding="$4" borderRadius="$4" gap="$3">
+          <XStack alignItems="center" gap="$2">
+            <UserCheck size={24} color="#22c55e" />
+            <Text fontSize={18} fontWeight="bold" color="#22c55e">
+              Emparejamiento simulado
+            </Text>
+          </XStack>
 
-        {/* Caso 1: Usuario ya está emparejado completamente */}
-        {couple && partner && (
-          <Card borderWidth={1} borderColor="$borderColor" padding="$4" borderRadius="$4" gap="$3">
-            <XStack alignItems="center" gap="$2">
-              <UserCheck size={24} color="#22c55e" />
-              <Text fontSize={18} fontWeight="bold" color="#22c55e">
-                ¡Emparejados! 
-              </Text>
+          <Separator />
+
+          <YStack gap="$2">
+            <XStack justifyContent="space-between">
+              <Paragraph size="$2" color="$colorFocus">Usuario demo:</Paragraph>
+              <Text fontWeight="bold">@portfolio_demo</Text>
             </XStack>
+            <XStack justifyContent="space-between">
+              <Paragraph size="$2" color="$colorFocus">Pareja demo:</Paragraph>
+              <Text fontWeight="bold">@pixel_muse</Text>
+            </XStack>
+            <XStack justifyContent="space-between">
+              <Paragraph size="$2" color="$colorFocus">Backend:</Paragraph>
+              <Text>Desactivado</Text>
+            </XStack>
+          </YStack>
 
-            <Separator />
+          <Separator marginVertical="$2" />
 
-            <YStack gap="$2">
-              <XStack justifyContent="space-between">
-                <Paragraph size="$2" color="$colorFocus">Tu Pareja:</Paragraph>
-                <Text fontWeight="bold">@{partner.username}</Text>
-              </XStack>
-              <XStack justifyContent="space-between">
-                <Paragraph size="$2" color="$colorFocus">Correo:</Paragraph>
-                <Text>{partner.email}</Text>
-              </XStack>
-              <XStack justifyContent="space-between">
-                <Paragraph size="$2" color="$colorFocus">Juntos desde:</Paragraph>
-                <Text>
-                  {new Date(couple.createdAt).toLocaleDateString('es-ES', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </Text>
-              </XStack>
-            </YStack>
-
-            <Separator marginVertical="$2" />
-
+          <XStack gap="$2" flexWrap="wrap">
             <Button
-              theme="red"
-              icon={<LogOut size={16} />}
-              disabled={isLoading}
-              onPress={handleLeaveCouple}
+              flex={1}
+              minWidth={150}
+              theme="active"
+              backgroundColor="#e11d48"
+              color="white"
+              icon={<Paintbrush size={18} color="white" />}
+              onPress={() => router.push('/draw')}
             >
-              Desvincularme de esta pareja
+              Dibujar
             </Button>
-          </Card>
-        )}
-
-        {/* Caso 2: Creador esperando que su pareja se una */}
-        {isWaitingPartner && (
-          <Card borderWidth={1} borderColor="$borderColor" padding="$4" borderRadius="$4" gap="$3">
-            <XStack alignItems="center" gap="$2">
-              <Spinner size="small" color="#e11d48" />
-              <Text fontSize={16} fontWeight="bold">
-                Esperando a tu pareja...
-              </Text>
-            </XStack>
-
-            <Paragraph size="$2" color="$colorFocus">
-              Comparte este código exclusivo con tu pareja para que se una a tu espacio:
-            </Paragraph>
-
-            <Card
+            <Button
+              flex={1}
+              minWidth={150}
               borderWidth={1}
               borderColor="$borderColor"
-              padding="$3"
-              backgroundColor="$backgroundHover"
-              alignItems="center"
-              borderRadius="$3"
+              icon={<ImageIcon size={18} />}
+              onPress={() => router.push('/gallery')}
             >
-              <Text fontSize={24} fontWeight="bold" letterSpacing={2} color="#e11d48">
-                {couple.inviteCode}
-              </Text>
-            </Card>
-
-            <XStack gap="$2">
-              <Button
-                flex={1}
-                theme="active"
-                backgroundColor="#e11d48"
-                color="white"
-                icon={<Copy size={16} color="white" />}
-                onPress={() => couple.inviteCode && copyToClipboard(couple.inviteCode)}
-              >
-                Copiar Código
-              </Button>
-              <Button
-                chromeless
-                icon={<RefreshCw size={16} />}
-                disabled={isLoading}
-                onPress={handleRegenerateCode}
-                accessibilityLabel="Regenerar código"
-              />
-            </XStack>
-
-            <Button
-              size="$3"
-              theme="active"
-              icon={isRefreshing ? <Spinner size="small" /> : <RefreshCw size={16} />}
-              disabled={isRefreshing || isLoading}
-              onPress={onRefresh}
-            >
-              Comprobar si mi pareja ya se unió
+              Galería
             </Button>
-
-            <Separator marginVertical="$2" />
-
-            <Button
-              theme="red"
-              size="$3"
-              chromeless
-              disabled={isLoading}
-              onPress={handleLeaveCouple}
-            >
-              Cancelar y salir
-            </Button>
-          </Card>
-        )}
-
-        {/* Caso 3: Usuario aún no tiene ninguna pareja */}
-        {!couple && (
-          <YStack gap="$4">
-            {/* Opción A: Crear nueva pareja */}
-            <Card borderWidth={1} borderColor="$borderColor" padding="$4" borderRadius="$4" gap="$3">
-              <XStack alignItems="center" gap="$2">
-                <UserPlus size={20} color="#e11d48" />
-                <Text fontWeight="bold" fontSize={16}>Crear Nueva Pareja</Text>
-              </XStack>
-              <Paragraph size="$2" color="$colorFocus">
-                Genera un código único para enviárselo a tu pareja e invitarla.
-              </Paragraph>
-              <Button
-                theme="active"
-                backgroundColor="#e11d48"
-                color="white"
-                disabled={isLoading}
-                onPress={handleCreateCouple}
-              >
-                {isLoading ? 'Creando...' : 'Generar Código de Invitación'}
-              </Button>
-            </Card>
-
-            {/* Opción B: Unirse con código */}
-            <Card borderWidth={1} borderColor="$borderColor" padding="$4" borderRadius="$4" gap="$3">
-              <Text fontWeight="bold" fontSize={16}>Tengo un Código de Invitación</Text>
-              <Paragraph size="$2" color="$colorFocus">
-                Si tu pareja ya creó el espacio, pega aquí su código (ej. PX-4A9B1C).
-              </Paragraph>
-              <ThemedInput
-                placeholder="PX-XXXXXX"
-                autoCapitalize="characters"
-                autoCorrect={false}
-                value={inviteCodeInput}
-                onChangeText={setInviteCodeInput}
-                returnKeyType="done"
-                onSubmitEditing={handleJoinCouple}
-              />
-              <Button
-                theme="active"
-                backgroundColor="#e11d48"
-                color="white"
-                disabled={isLoading}
-                pressStyle={{ opacity: 0.85, scale: 0.98 }}
-                onPress={handleJoinCouple}
-              >
-                {isLoading ? 'Vinculando...' : 'Unirme a mi Pareja'}
-              </Button>
-            </Card>
-          </YStack>
-        )}
-
-        <Separator marginVertical="$3" />
-
-        {/* Botón de Cerrar Sesión de la cuenta */}
-        <Button
-          size="$3"
-          chromeless
-          icon={<LogOut size={16} />}
-          pressStyle={{ opacity: 0.7 }}
-          onPress={async () => {
-            await logout();
-            router.replace('/auth');
-          }}
-        >
-          Cerrar Sesión (@{user.username})
-        </Button>
+          </XStack>
+        </Card>
       </YStack>
     </ScrollView>
-  </Pressable>
-</KeyboardAvoidingView>
   );
 }

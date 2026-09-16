@@ -37,6 +37,8 @@ export interface PixelCanvasProps {
   size?: number; // 16 o 32
   onSave?: (grid: string[][]) => void;
   isSaving?: boolean;
+  saveLabel?: string;
+  savingLabel?: string;
 }
 
 const PALETTE = [
@@ -84,6 +86,8 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
   size = 32,
   onSave,
   isSaving = false,
+  saveLabel = 'Enviar Dibujo',
+  savingLabel = 'Enviando a tu pareja...',
 }) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -386,7 +390,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
               chromeless={activeTool !== 'pencil'}
               icon={<Paintbrush size={18} />}
               onPress={() => setActiveTool('pencil')}
-              accessibilityLabel="Pincel"
+              aria-label="Pincel"
             />
             <Button
               size="$3"
@@ -394,7 +398,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
               chromeless={activeTool !== 'eraser'}
               icon={<Eraser size={18} />}
               onPress={() => setActiveTool('eraser')}
-              accessibilityLabel="Borrador"
+              aria-label="Borrador"
             />
             <Button
               size="$3"
@@ -402,7 +406,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
               chromeless={activeTool !== 'bucket'}
               icon={<PaintBucket size={18} />}
               onPress={() => setActiveTool('bucket')}
-              accessibilityLabel="Bote de pintura"
+              aria-label="Bote de pintura"
             />
             <Button
               size="$3"
@@ -410,7 +414,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
               chromeless={activeTool !== 'eyedropper'}
               icon={<Pipette size={18} />}
               onPress={() => setActiveTool('eyedropper')}
-              accessibilityLabel="Cuentagotas"
+              aria-label="Cuentagotas"
             />
           </XStack>
 
@@ -422,7 +426,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
               disabled={history.length === 0}
               opacity={history.length === 0 ? 0.4 : 1}
               onPress={handleUndo}
-              accessibilityLabel="Deshacer"
+              aria-label="Deshacer"
             />
             <Button
               size="$3"
@@ -430,7 +434,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
               icon={<GridIcon size={18} />}
               theme={showGridLines ? 'active' : undefined}
               onPress={() => setShowGridLines(!showGridLines)}
-              accessibilityLabel="Rejilla"
+              aria-label="Rejilla"
             />
             <Button
               size="$3"
@@ -438,7 +442,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
               icon={<Trash2 size={18} color="#f43f5e" />}
               theme="red"
               onPress={handleClear}
-              accessibilityLabel="Limpiar"
+              aria-label="Limpiar"
             />
           </XStack>
         </XStack>
@@ -553,7 +557,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
                     setSelectedColor(color);
                     if (activeTool === 'eraser') setActiveTool('pencil');
                   }}
-                  accessibilityLabel={`Color ${color}`}
+                  aria-label={`Color ${color}`}
                 />
               );
             })}
@@ -573,7 +577,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
             color="white"
             pressStyle={{ opacity: 0.8 }}
           >
-            {isSaving ? 'Enviando a tu pareja...' : 'Enviar Dibujo'}
+            {isSaving ? savingLabel : saveLabel}
           </Button>
         )}
       </YStack>

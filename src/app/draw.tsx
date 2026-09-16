@@ -1,64 +1,28 @@
 import React, { useState } from 'react';
 import { Alert, Platform, ToastAndroid } from 'react-native';
 import { useRouter } from 'expo-router';
-import {
-  YStack,
-  XStack,
-  Paragraph,
-  Card,
-} from 'tamagui';
+import { YStack, XStack, Paragraph, Card } from 'tamagui';
 import { Heart } from '../components/icons';
-import { useAuth } from '../context/auth-context';
-import { api } from '../services/api';
-import { widgetService } from '../services/widget-service';
 import { PixelCanvas } from '../components/canvas/PixelCanvas';
 import { ThemedInput } from '../components/ui/ThemedInput';
+import { useDemoArtworks } from '../context/demo-artwork-context';
 
 export default function DrawScreen() {
   const router = useRouter();
-  const { user, couple, syncNow } = useAuth();
+  const { saveArtwork } = useDemoArtworks();
 
   const [title, setTitle] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
 
   const handleSaveArtwork = async (grid: string[][]) => {
-    if (!user) {
-      router.push('/auth');
-      return;
-    }
-
-    if (!couple || !couple.id) {
-      const msg = 'Debes estar vinculado a una pareja antes de enviar un dibujo.';
-      if (Platform.OS === 'web') {
-        alert(msg);
-      } else {
-        Alert.alert('Sin pareja vinculada', msg);
-      }
-      router.push('/couple');
-      return;
-    }
-
     try {
       setIsSaving(true);
       setStatusMsg(null);
 
-      const created = await api.artworks.create({
-        name: title.trim() || 'Dibujo con amor',
-        width: grid.length,
-        height: grid[0]?.length || grid.length,
-        grid,
-        coupleId: couple.id,
-        authorId: user.id,
-      });
+      saveArtwork(title, grid);
 
-      // Actualizar widget de pantalla de inicio inmediatamente
-      await widgetService.updateLatestDrawing(created, user.id);
-
-      // Sincronizar estado global inmediatamente
-      await syncNow();
-
-      const successText = '¡Tu dibujo ha sido enviado con éxito a tu pareja! ❤️';
+      const successText = 'Demo guardada en esta sesión.';
       setStatusMsg({ type: 'success', text: successText });
 
       if (Platform.OS === 'web') {
@@ -66,13 +30,12 @@ export default function DrawScreen() {
       } else if (Platform.OS === 'android') {
         ToastAndroid.show(successText, ToastAndroid.SHORT);
       } else {
-        Alert.alert('¡Enviado!', successText);
+        Alert.alert('Guardado', successText);
       }
 
-      router.replace('/');
+      router.replace('/gallery');
     } catch (err: any) {
-      const errorText = err.message || 'Error al guardar el dibujo.';
-      setStatusMsg({ type: 'error', text: errorText });
+      setStatusMsg({ type: 'error', text: err.message || 'Error al guardar la demo.' });
     } finally {
       setIsSaving(false);
     }
@@ -80,7 +43,6 @@ export default function DrawScreen() {
 
   return (
     <YStack flex={1} backgroundColor="$background">
-      {/* Barra de Título del Dibujo */}
       <YStack paddingHorizontal="$4" paddingTop="$3" gap="$2">
         <XStack alignItems="center" gap="$2">
           <Heart size={20} color="#e11d48" />
@@ -116,8 +78,12 @@ export default function DrawScreen() {
         )}
       </YStack>
 
-      {/* Lienzo Interactivo */}
-      <PixelCanvas onSave={handleSaveArtwork} isSaving={isSaving} />
+      <PixelCanvas
+        onSave={handleSaveArtwork}
+        isSaving={isSaving}
+        saveLabel="Guardar demo"
+        savingLabel="Guardando demo..."
+      />
     </YStack>
   );
 }

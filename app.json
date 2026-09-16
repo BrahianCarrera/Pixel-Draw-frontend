@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "PixelDraw",
-    "slug": "pixeldraw",
+    "name": "PixelDraw Demo",
+    "slug": "pixeldraw-demo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -9,10 +9,10 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.brahiancx.pixeldraw"
+      "bundleIdentifier": "com.brahiancx.pixeldraw.demo"
     },
     "android": {
-      "package": "com.brahiancx.pixeldraw",
+      "package": "com.brahiancx.pixeldraw.demo",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
@@ -33,40 +33,6 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 100
         }
-      ],
-      [
-        "expo-widgets",
-        {
-          "groupIdentifier": "group.com.brahiancx.pixeldraw",
-          "enableAndroid": true,
-          "widgets": [
-            {
-              "name": "LatestDrawWidget",
-              "displayName": "Último Dibujo",
-              "description": "Muestra el último dibujo de tu pareja",
-              "supportedFamilies": [
-                "systemSmall",
-                "systemMedium",
-                "systemLarge"
-              ],
-              "contentMarginsDisabled": false,
-              "ios": {
-                "supportedFamilies": [
-                  "systemSmall",
-                  "systemMedium",
-                  "systemLarge"
-                ]
-              },
-              "android": {
-                "minWidth": 120,
-                "minHeight": 120,
-                "targetCellWidth": 2,
-                "targetCellHeight": 2,
-                "resizeMode": "both"
-              }
-            }
-          ]
-        }
       ]
     ],
     "experiments": {
@@ -75,23 +41,6 @@
     "extra": {
       "router": {},
       "eas": {
-        "build": {
-          "experimental": {
-            "ios": {
-              "appExtensions": [
-                {
-                  "targetName": "ExpoWidgetsTarget",
-                  "bundleIdentifier": "com.brahiancx.pixeldraw.ExpoWidgetsTarget",
-                  "entitlements": {
-                    "com.apple.security.application-groups": [
-                      "group.com.brahiancx.pixeldraw"
-                    ]
-                  }
-                }
-              ]
-            }
-          }
-        },
         "projectId": "bc2172a7-5ed0-43b6-8fe2-aa6ebe890a1d"
       }
     }

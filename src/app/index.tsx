@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from 'react';
-import { ScrollView, RefreshControl, View, StyleSheet, useColorScheme } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import React from 'react';
+import { ScrollView, StyleSheet, useColorScheme, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   YStack,
@@ -9,7 +9,6 @@ import {
   Paragraph,
   Card,
   Button,
-  Spinner,
   H2,
   H4,
   Separator,
@@ -18,291 +17,179 @@ import {
   Heart,
   Paintbrush,
   ImageIcon,
-  Users,
   Calendar,
   UserIcon,
-  RefreshCw,
   ClockFading,
   Sparkles,
-  X,
+  Star,
 } from '../components/icons';
-import { useAuth } from '../context/auth-context';
 import { PixelPreview } from '../components/canvas/PixelPreview';
+import { useDemoArtworks } from '../context/demo-artwork-context';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { user, couple, latestArtwork, syncNow, isLoading: isAuthLoading } = useAuth();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
-
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-
-  // Sincronizar automáticamente al enfocar la pantalla
-  useFocusEffect(
-    useCallback(() => {
-      syncNow();
-    }, [syncNow])
-  );
-
-  const onRefresh = async () => {
-    setIsRefreshing(true);
-    await syncNow();
-    setIsRefreshing(false);
-  };
-
-  if (isAuthLoading) {
-    return (
-      <YStack flex={1} justifyContent="center" alignItems="center">
-        <Spinner size="large" color="#e11d48" />
-      </YStack>
-    );
-  }
-
-  // Si no está autenticado
-  if (!user) {
-    return (
-      <YStack flex={1} justifyContent="center" alignItems="center" padding="$4" gap="$4">
-        <Heart size={64} color="#e11d48" />
-        <H2 textAlign="center" color="#e11d48">PixelDraw</H2>
-        <Paragraph textAlign="center" maxWidth={320} color="$colorFocus">
-          Dibuja en tiempo real y comparte notas de amor en píxeles directamente con tu pareja.
-        </Paragraph>
-        <Button
-          size="$4"
-          theme="active"
-          backgroundColor="#e11d48"
-          color="white"
-          onPress={() => router.push('/auth')}
-        >
-          Iniciar Sesión / Registrarme
-        </Button>
-      </YStack>
-    );
-  }
-
-  const partner = couple?.members?.find((m) => m.id !== user.id);
+  const { artworks, latestArtwork } = useDemoArtworks();
 
   return (
     <YStack flex={1} backgroundColor="$background">
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={styles.container}
+        contentContainerStyle={[styles.container, { paddingBottom: 120 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={onRefresh}
-            colors={['#e11d48']}
-            progressBackgroundColor={isDark ? '#1e1e24' : '#ffffff'}
-          />
-        }
       >
-      <YStack gap="$4" maxWidth={480} width="100%" alignSelf="center">
-        {/* Banner superior de Estado de Pareja */}
-        <Card borderWidth={1} borderColor="$borderColor" padding="$3" borderRadius="$4">
-          <XStack justifyContent="space-between" alignItems="center">
-            <YStack gap="$1">
-              <XStack>
-              <Text fontSize={20} fontWeight="bold">
-                ¡Hola, @{user.username}! 
-              </Text>
-              <Sparkles size={24} color="#facc15" style={{ marginLeft: 4, marginTop: 2 }} />
-              </XStack>
-              
-              <XStack alignItems="center" gap="$1">
-              {partner ? (
-                <XStack alignItems="center" gap="$2">
-                <Heart size={16} color="#e11d48" /> 
-                <Paragraph size="$2" color="$colorFocus">
-                  Estás vinculado con @{partner.username}
-                </Paragraph>
-              </XStack>
-              ) : (
-                <XStack alignItems="center" gap="$2">
-                <X size={16} color="#e11d48" /> 
-                <Paragraph size="$2" color="$colorFocus">
-                  Aún no tienes pareja vinculada.
-              </Paragraph>
-                </XStack>
-              )}
-              
-              </XStack>
-            </YStack>
-
-            <Button
-              size="$2"
-              theme="active"
-              chromeless
-              icon={<Users size={24} />}
-              onPress={() => router.push('/couple')}
-            >
-              Pareja
-            </Button>
-          </XStack>
-        </Card>
-
-        {/* Tarjeta Principal: Último dibujo de la pareja */}
-        <YStack gap="$2">
-          <XStack justifyContent="space-between" alignItems="center">
+        <YStack gap="$4" maxWidth={520} width="100%" alignSelf="center">
+          <Card borderWidth={1} borderColor="$borderColor" padding="$4" borderRadius="$4" gap="$3">
             <XStack alignItems="center" gap="$2">
-              <ClockFading size={18} color="#e11d48" />
-              <H4>Ultimo Dibujo</H4>
+              <Heart size={30} color="#e11d48" />
+              <YStack flex={1}>
+                <XStack alignItems="center" gap="$1">
+                  <H2 color="#e11d48">PixelDraw</H2>
+                  <Sparkles size={24} color="#facc15" />
+                </XStack>
+                <Paragraph size="$2" color="$colorFocus">
+                  Demo de portfolio con editor pixel art, Tamagui y Skia.
+                </Paragraph>
+              </YStack>
             </XStack>
-            <XStack alignItems="center" gap="$1">
-              <Button
-                size="$2"
-                chromeless
-                icon={isRefreshing ? <Spinner size="small" /> : <RefreshCw size={14} />}
-                disabled={isRefreshing}
-                onPress={onRefresh}
-                accessibilityLabel="Actualizar lienzo"
-              />
-              {latestArtwork && (
-                <Button
-                  size="$2"
-                  chromeless
-                  onPress={() => router.push('/gallery')}
-                >
-                  Ver galería
-                </Button>
-              )}
-            </XStack>
-          </XStack>
 
-          {!couple ? (
-            <Card borderWidth={1} borderColor="$borderColor" padding="$5" alignItems="center" gap="$3" borderRadius="$4">
-              <Heart size={36} color="#fda4af" />
-              <Text fontWeight="bold" textAlign="center">
-                Vincula tu cuenta para compartir dibujos
-              </Text>
-              <Paragraph textAlign="center" color="$colorFocus" size="$2">
-                Genera un código o ingresa el de tu pareja para sincronizar su lienzo.
-              </Paragraph>
+            <Paragraph color="$colorFocus">
+              Esta variante elimina login, backend y sincronización para que cualquiera pueda probar el
+              lienzo al instante.
+            </Paragraph>
+
+            <XStack gap="$2" flexWrap="wrap">
               <Button
+                flex={1}
+                minWidth={150}
                 theme="active"
                 backgroundColor="#e11d48"
                 color="white"
-                onPress={() => router.push('/couple')}
-              >
-                Vincular Pareja
-              </Button>
-            </Card>
-          ) : latestArtwork ? (
-            <Card borderWidth={1} borderColor="$borderColor" padding="$3.5" borderRadius="$4" gap="$3">
-              <View style={styles.previewCenter}>
-                <PixelPreview grid={latestArtwork.grid} size={280} borderRadius={10} />
-              </View>
-
-              <Separator />
-
-              <XStack justifyContent="space-between" alignItems="center">
-                <YStack gap="$1">
-                  <Text fontWeight="bold" fontSize={16}>
-                    {latestArtwork.name || 'Dibujo de amor'}
-                  </Text>
-                  <XStack gap="$3">
-                    <XStack alignItems="center" gap="$1">
-                      <UserIcon size={12} color="#888" />
-                      <Paragraph size="$1" color="$colorFocus">
-                        {latestArtwork.authorId === user.id
-                          ? 'Tú'
-                          : latestArtwork.author?.username || 'Tu Pareja'}
-                      </Paragraph>
-                    </XStack>
-                    <XStack alignItems="center" gap="$1">
-                      <Calendar size={12} color="#888" />
-                      <Paragraph size="$1" color="$colorFocus">
-                        {new Date(latestArtwork.createdAt).toLocaleDateString('es-ES', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </Paragraph>
-                    </XStack>
-                  </XStack>
-                </YStack>
-
-                <Button
-                  size="$3"
-                  theme="active"
-                  backgroundColor="#e11d48"
-                  color="white"
-                  icon={<Paintbrush size={24} color="white" />}
-                  
-                  onPress={() => router.push('/draw')}
-                >
-                  Responder
-                </Button>
-              </XStack>
-            </Card>
-          ) : (
-            <Card borderWidth={1} borderColor="$borderColor" padding="$5" alignItems="center" gap="$3" borderRadius="$4">
-              <Heart size={40} color="#fda4af" />
-              <Text fontWeight="bold">El lienzo está esperando su primer dibujo</Text>
-              <Paragraph textAlign="center" color="$colorFocus" size="$2">
-                Dibuja algo lindo para que aparezca aquí cuando tu pareja abra la app.
-              </Paragraph>
-              <Button
-                theme="active"
-                backgroundColor="#e11d48"
-                color="white"
-                icon={<Paintbrush size={24} color="white" />}
+                icon={<Paintbrush size={20} color="white" />}
                 onPress={() => router.push('/draw')}
               >
-                Crear Primer Dibujo
+                Probar editor
               </Button>
-            </Card>
-          )}
+              <Button
+                flex={1}
+                minWidth={150}
+                borderWidth={1}
+                borderColor="$borderColor"
+                icon={<ImageIcon size={20} />}
+                onPress={() => router.push('/gallery')}
+              >
+                Ver galería
+              </Button>
+            </XStack>
+          </Card>
+
+          <YStack gap="$2">
+            <XStack justifyContent="space-between" alignItems="center">
+              <XStack alignItems="center" gap="$2">
+                <ClockFading size={18} color="#e11d48" />
+                <H4>Último dibujo</H4>
+              </XStack>
+              <XStack alignItems="center" gap="$1">
+                <Star size={16} color="#facc15" />
+                <Paragraph size="$2" color="$colorFocus">
+                  {artworks.length} piezas
+                </Paragraph>
+              </XStack>
+            </XStack>
+
+            {latestArtwork && (
+              <Card borderWidth={1} borderColor="$borderColor" padding="$3.5" borderRadius="$4" gap="$3">
+                <View style={styles.previewCenter}>
+                  <PixelPreview grid={latestArtwork.grid} size={280} borderRadius={10} />
+                </View>
+
+                <Separator />
+
+                <XStack justifyContent="space-between" alignItems="center" gap="$3">
+                  <YStack flex={1} gap="$1">
+                    <Text fontWeight="bold" fontSize={16} numberOfLines={1}>
+                      {latestArtwork.name}
+                    </Text>
+                    <XStack gap="$3" flexWrap="wrap">
+                      <XStack alignItems="center" gap="$1">
+                        <UserIcon size={12} color="#888" />
+                        <Paragraph size="$1" color="$colorFocus">
+                          @{latestArtwork.author.username}
+                        </Paragraph>
+                      </XStack>
+                      <XStack alignItems="center" gap="$1">
+                        <Calendar size={12} color="#888" />
+                        <Paragraph size="$1" color="$colorFocus">
+                          {new Date(latestArtwork.createdAt).toLocaleDateString('es-ES', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </Paragraph>
+                      </XStack>
+                    </XStack>
+                  </YStack>
+
+                  <Button
+                    size="$3"
+                    theme="active"
+                    backgroundColor="#e11d48"
+                    color="white"
+                    icon={<Paintbrush size={20} color="white" />}
+                    onPress={() => router.push('/draw')}
+                  >
+                    Crear
+                  </Button>
+                </XStack>
+              </Card>
+            )}
+          </YStack>
         </YStack>
+      </ScrollView>
 
+      <YStack
+        borderTopWidth={1}
+        borderTopColor="$borderColor"
+        backgroundColor={isDark ? '#121214' : '#ffffff'}
+        paddingHorizontal="$4"
+        paddingTop="$3"
+        paddingBottom={12 + insets.bottom}
+        style={styles.bottomBar}
+      >
+        <XStack gap="$2" maxWidth={520} width="100%" alignSelf="center">
+          <Button
+            flex={1}
+            size="$4"
+            theme="active"
+            backgroundColor="#e11d48"
+            color="white"
+            icon={<Paintbrush size={22} color="white" />}
+            onPress={() => router.push('/draw')}
+          >
+            Dibujar
+          </Button>
+          <Button
+            flex={1}
+            size="$4"
+            borderWidth={1}
+            borderColor="$borderColor"
+            icon={<ImageIcon size={22} />}
+            onPress={() => router.push('/gallery')}
+          >
+            Galería
+          </Button>
+        </XStack>
       </YStack>
-    </ScrollView>
-
-    {/* Barra inferior fija de Accesos Rápidos respetando la navbar / safe area */}
-    <YStack
-      borderTopWidth={1}
-      borderTopColor="$borderColor"
-      backgroundColor={isDark ? '#121214' : '#ffffff'}
-      paddingHorizontal="$4"
-      paddingTop="$3"
-      paddingBottom={12}
-      style={styles.bottomBar}
-    >
-      <XStack gap="$2" maxWidth={480} width="100%" alignSelf="center">
-        <Button
-          flex={1}
-          size="$4"
-          theme="active"
-          backgroundColor="#e11d48"
-          color="white"
-          icon={<Paintbrush size={24} color="white" />}
-          onPress={() => router.push('/draw')}
-        >
-          Dibujar
-        </Button>
-        <Button
-          flex={1}
-          size="$4"
-          borderWidth={1}
-          borderColor="$borderColor"
-          icon={<ImageIcon size={24} />}
-          onPress={() => router.push('/gallery')}
-        >
-          Galería
-        </Button>
-      </XStack>
     </YStack>
-  </YStack>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     padding: 16,
-    paddingBottom: 24,
   },
   previewCenter: {
     alignItems: 'center',

@@ -1,7 +1,6 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   ScrollView,
-  RefreshControl,
   TouchableOpacity,
   Modal,
   View,
@@ -9,7 +8,7 @@ import {
   useColorScheme,
   Platform,
 } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter } from 'expo-router';
 import {
   YStack,
   XStack,
@@ -17,113 +16,35 @@ import {
   Paragraph,
   Card,
   Button,
-  Spinner,
   H3,
   Separator,
 } from 'tamagui';
-import { Heart, Plus, Calendar, UserIcon, X, RefreshCw, Star } from '../components/icons';
-import { useAuth } from '../context/auth-context';
-import { api, Artwork } from '../services/api';
+import { Heart, Plus, Calendar, UserIcon, X, RotateCcw, Star } from '../components/icons';
 import { PixelPreview } from '../components/canvas/PixelPreview';
+import { DemoArtwork, useDemoArtworks } from '../context/demo-artwork-context';
 
 export default function GalleryScreen() {
   const router = useRouter();
-  const { user, couple, latestArtwork, syncNow } = useAuth();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const { artworks, resetDemo } = useDemoArtworks();
 
-  const [artworks, setArtworks] = useState<Artwork[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null);
-
-  const fetchArtworks = useCallback(async () => {
-    if (!couple?.id) {
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const data = await api.artworks.getCoupleArtworks(couple.id, 1, 10);
-      setArtworks(data.artworks);
-    } catch (err) {
-      console.warn('Error al obtener la galería:', err);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  }, [couple?.id]);
-
-  // Recargar al enfocar la pantalla
-  useFocusEffect(
-    useCallback(() => {
-      syncNow();
-      fetchArtworks();
-    }, [syncNow, fetchArtworks])
-  );
-
-  // Si el auto-sync global detecta un nuevo dibujo, refrescar la lista en tiempo real
-  useEffect(() => {
-    if (latestArtwork?.id) {
-      fetchArtworks();
-    }
-  }, [latestArtwork?.id, fetchArtworks]);
-
-  const onRefresh = () => {
-    setIsRefreshing(true);
-    syncNow();
-    fetchArtworks();
-  };
-
-  if (!user) {
-    return (
-      <YStack flex={1} justifyContent="center" alignItems="center" padding="$4" gap="$3">
-        <Heart size={48} color="#e11d48" />
-        <H3 textAlign="center">Inicia sesión para ver tu galería</H3>
-        <Button theme="active" backgroundColor="#e11d48" color="white" onPress={() => router.push('/auth')}>
-          Iniciar Sesión
-        </Button>
-      </YStack>
-    );
-  }
-
-  if (!couple) {
-    return (
-      <YStack flex={1} justifyContent="center" alignItems="center" padding="$4" gap="$3">
-        <Heart size={48} color="#e11d48" />
-        <H3 textAlign="center">Aún no estás en una pareja</H3>
-        <Paragraph textAlign="center" color="$colorFocus">
-          Vincula tu cuenta con tu pareja para empezar a compartir dibujos.
-        </Paragraph>
-        <Button theme="active" backgroundColor="#e11d48" color="white" onPress={() => router.push('/couple')}>
-          Vincular Pareja
-        </Button>
-      </YStack>
-    );
-  }
+  const [selectedArtwork, setSelectedArtwork] = useState<DemoArtwork | null>(null);
 
   return (
     <YStack flex={1} backgroundColor="$background">
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 50 }}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={onRefresh}
-            colors={['#e11d48']}
-            progressBackgroundColor={isDark ? '#1e1e24' : '#ffffff'}
-          />
-        }
       >
         <XStack justifyContent="space-between" alignItems="center" marginBottom="$4">
-          <YStack>
+          <YStack flex={1}>
             <XStack alignItems="center" gap="$1">
-            <H3>Nuestra Galería </H3> 
-            <Star size={24} color="#facc15" />
+              <H3>Galería demo</H3>
+              <Star size={24} color="#facc15" />
             </XStack>
             <Paragraph size="$2" color="$colorFocus">
-              {artworks.length} {artworks.length === 1 ? 'dibujo compartido' : 'dibujos compartidos'}
+              {artworks.length} {artworks.length === 1 ? 'dibujo guardado' : 'dibujos guardados'}
             </Paragraph>
           </YStack>
 
@@ -131,10 +52,9 @@ export default function GalleryScreen() {
             <Button
               size="$3"
               chromeless
-              icon={isRefreshing ? <Spinner size="small" /> : <RefreshCw size={16} />}
-              disabled={isRefreshing || isLoading}
-              onPress={onRefresh}
-              accessibilityLabel="Actualizar galería"
+              icon={<RotateCcw size={16} />}
+              onPress={resetDemo}
+              aria-label="Reiniciar demo"
             />
             <Button
               size="$3"
@@ -149,26 +69,20 @@ export default function GalleryScreen() {
           </XStack>
         </XStack>
 
-        {isLoading ? (
-          <YStack padding="$6" alignItems="center">
-            <Spinner size="large" color="#e11d48" />
-            <Paragraph marginTop="$2">Cargando recuerdos...</Paragraph>
-          </YStack>
-        ) : artworks.length === 0 ? (
+        {artworks.length === 0 ? (
           <Card borderWidth={1} borderColor="$borderColor" padding="$6" alignItems="center" gap="$3" borderRadius="$4">
             <Heart size={40} color="#fda4af" />
-            <Text fontWeight="bold">Tu galería está vacía</Text>
+            <Text fontWeight="bold">La galería demo está vacía</Text>
             <Paragraph textAlign="center" color="$colorFocus" size="$2">
-              Sé el primero en enviarle un dibujo romántico a tu pareja.
+              Crea un dibujo para verlo aparecer aquí sin iniciar sesión.
             </Paragraph>
             <Button theme="active" backgroundColor="#e11d48" color="white" onPress={() => router.push('/draw')}>
-              Crear Primer Dibujo
+              Crear primer dibujo
             </Button>
           </Card>
         ) : (
           <XStack flexWrap="wrap" gap="$3" justifyContent="space-between">
             {artworks.map((art) => {
-              const isMine = art.authorId === user.id;
               const dateStr = new Date(art.createdAt).toLocaleDateString('es-ES', {
                 month: 'short',
                 day: 'numeric',
@@ -193,7 +107,7 @@ export default function GalleryScreen() {
                         <XStack alignItems="center" gap="$1">
                           <UserIcon size={12} color="#888" />
                           <Paragraph size="$1" color="$colorFocus">
-                            {isMine ? 'Tú' : art.author?.username || 'Pareja'}
+                            @{art.author.username}
                           </Paragraph>
                         </XStack>
                         <XStack alignItems="center" gap="$1">
@@ -212,7 +126,6 @@ export default function GalleryScreen() {
         )}
       </ScrollView>
 
-      {/* Modal de Detalle / Zoom */}
       <Modal
         visible={!!selectedArtwork}
         transparent
@@ -242,7 +155,7 @@ export default function GalleryScreen() {
             >
               <XStack justifyContent="space-between" alignItems="center">
                 <H3 numberOfLines={1} flex={1}>
-                  {selectedArtwork?.name || 'Dibujo de Pareja'}
+                  {selectedArtwork?.name || 'Dibujo demo'}
                 </H3>
                 <Button
                   size="$2"
@@ -265,11 +178,7 @@ export default function GalleryScreen() {
               <YStack gap="$1">
                 <XStack justifyContent="space-between">
                   <Paragraph size="$2" color="$colorFocus">Creado por:</Paragraph>
-                  <Text fontWeight="bold">
-                    {selectedArtwork?.authorId === user?.id
-                      ? 'Tú'
-                      : selectedArtwork?.author?.username || 'Tu Pareja'}
-                  </Text>
+                  <Text fontWeight="bold">@{selectedArtwork?.author.username}</Text>
                 </XStack>
                 <XStack justifyContent="space-between">
                   <Paragraph size="$2" color="$colorFocus">Fecha:</Paragraph>

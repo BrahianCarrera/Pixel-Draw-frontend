@@ -5,23 +5,35 @@ import React, {
   useImperativeHandle,
   forwardRef,
   useCallback,
+  useMemo,
 } from 'react';
 import { View, StyleSheet } from 'react-native';
-import {
-  Canvas,
-  Picture,
-  Skia,
-  PaintStyle,
-  SkPicture,
-} from '@shopify/react-native-skia';
+import Svg, { Rect, Line } from 'react-native-svg';
 import { CanvasSurfaceProps, CanvasSurfaceRef } from './CanvasSurface.types';
+
+let Skia: any = null;
+let Canvas: any = null;
+let Picture: any = null;
+let PaintStyle: any = null;
+
+try {
+  // Dynamically resolve Skia if available in native runtime
+  const skiaModule = require('@shopify/react-native-skia');
+  Skia = skiaModule.Skia;
+  Canvas = skiaModule.Canvas;
+  Picture = skiaModule.Picture;
+  PaintStyle = skiaModule.PaintStyle;
+} catch {
+  // Graceful fallback to react-native-svg for Expo Go / Expo Snack
+}
 
 function buildSkiaPicture(
   grid: string[][],
   gridSize: number,
   canvasSize: number,
   showGridLines: boolean
-): SkPicture {
+) {
+  if (!Skia) return null;
   const recorder = Skia.PictureRecorder();
   const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, canvasSize, canvasSize));
   const paint = Skia.Paint();
@@ -54,7 +66,7 @@ function buildSkiaPicture(
     }
   }
 
-  // 3. Dibujar rejilla vectorial perfecta (un solo trazo con Skia)
+  // 3. Dibujar rejilla vectorial
   if (showGridLines) {
     paint.setStyle(PaintStyle.Stroke);
     paint.setStrokeWidth(1);
@@ -63,10 +75,7 @@ function buildSkiaPicture(
     for (let i = 1; i < gridSize; i++) {
       const x = Math.round(i * cellW);
       const y = Math.round(i * cellH);
-
-      // Línea vertical
       canvas.drawLine(x, 0, x, canvasSize, paint);
-      // Línea horizontal
       canvas.drawLine(0, y, canvasSize, y, paint);
     }
   }
@@ -79,47 +88,114 @@ export const CanvasSurface = forwardRef<CanvasSurfaceRef, CanvasSurfaceProps>(
     const gridRef = useRef<string[][]>(grid);
     gridRef.current = grid;
 
-    const [picture, setPicture] = useState<SkPicture>(() =>
+    const [currentGrid, setCurrentGrid] = useState<string[][]>(grid);
+    const [picture, setPicture] = useState<any>(() =>
       buildSkiaPicture(grid, gridSize, canvasSize, showGridLines)
     );
 
-    const updatePicture = useCallback(
+    const updateSurface = useCallback(
       (sourceGrid = gridRef.current) => {
-        const nextPic = buildSkiaPicture(
-          sourceGrid,
-          gridSize,
-          canvasSize,
-          showGridLines
-        );
-        setPicture(nextPic);
+        if (Skia && Canvas && Picture) {
+          const nextPic = buildSkiaPicture(
+            sourceGrid,
+            gridSize,
+            canvasSize,
+            showGridLines
+          );
+          setPicture(nextPic);
+        } else {
+          setCurrentGrid(sourceGrid.map((row) => [...row]));
+        }
       },
       [gridSize, canvasSize, showGridLines]
     );
 
     useEffect(() => {
-      updatePicture(grid);
-    }, [grid, updatePicture]);
+      updateSurface(grid);
+    }, [grid, updateSurface]);
 
     useImperativeHandle(ref, () => ({
       paintCell: (row: number, col: number, color: string) => {
         if (gridRef.current[row]) {
           gridRef.current[row][col] = color;
         }
-        updatePicture();
+        updateSurface();
       },
       redraw: (newGrid?: string[][]) => {
         if (newGrid) {
           gridRef.current = newGrid;
         }
-        updatePicture(newGrid);
+        updateSurface(newGrid);
       },
     }));
 
+    const cellW = canvasSize / gridSize;
+    const cellH = canvasSize / gridSize;
+
+    const gridLines = useMemo(() => {
+      if (!showGridLines) return [];
+      const lines = [];
+      for (let i = 1; i < gridSize; i++) {
+        const x = Math.round(i * cellW);
+        const y = Math.round(i * cellH);
+        lines.push(
+          <Line
+            key={`vl-${i}`}
+            x1={x}
+            y1={0}
+            x2={x}
+            y2={canvasSize}
+            stroke="rgba(128, 128, 128, 0.28)"
+            strokeWidth={1}
+          />
+        );
+        lines.push(
+          <Line
+            key={`hl-${i}`}
+            x1={0}
+            y1={y}
+            x2={canvasSize}
+            y2={y}
+            stroke="rgba(128, 128, 128, 0.28)"
+            strokeWidth={1}
+          />
+        );
+      }
+      return lines;
+    }, [showGridLines, gridSize, cellW, cellH, canvasSize]);
+
+    if (Skia && Canvas && Picture && picture) {
+      return (
+        <View style={[styles.container, { width: canvasSize, height: canvasSize }]}>
+          <Canvas style={{ width: canvasSize, height: canvasSize }}>
+            <Picture picture={picture} />
+          </Canvas>
+        </View>
+      );
+    }
+
+    // Fallback SVG render for Expo Go / Expo Snack
     return (
       <View style={[styles.container, { width: canvasSize, height: canvasSize }]}>
-        <Canvas style={{ width: canvasSize, height: canvasSize }}>
-          <Picture picture={picture} />
-        </Canvas>
+        <Svg width={canvasSize} height={canvasSize}>
+          <Rect width={canvasSize} height={canvasSize} fill="#ffffff" />
+          {currentGrid.map((row, r) =>
+            row.map((color, c) => {
+              if (!color || color.toLowerCase() === '#ffffff') return null;
+              return (
+                <Rect
+                  key={`cell-${r}-${c}`}
+                  x={c * cellW}
+                  y={r * cellH}
+                  width={cellW + 0.5}
+                  height={cellH + 0.5}
+                  fill={color}
+                />
+              );
+            })
+          )}
+          {gridLines}
+        </Svg>
       </View>
     );
   }

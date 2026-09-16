@@ -1,6 +1,6 @@
 import React from 'react';
 import { ScrollView, StyleSheet, useColorScheme, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter } from '../context/router-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   YStack,

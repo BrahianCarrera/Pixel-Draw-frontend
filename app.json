@@ -5,44 +5,18 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "pixeldraw",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.brahiancx.pixeldraw.demo"
+      "supportsTablet": true
     },
     "android": {
-      "package": "com.brahiancx.pixeldraw.demo",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
-      },
-      "softwareKeyboardLayoutMode": "resize"
+      }
     },
     "web": {
-      "output": "single",
-      "favicon": "./assets/images/favicon.png",
-      "bundler": "metro"
-    },
-    "plugins": [
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#e11d48",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 100
-        }
-      ]
-    ],
-    "experiments": {
-      "typedRoutes": true
-    },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "bc2172a7-5ed0-43b6-8fe2-aa6ebe890a1d"
-      }
+      "favicon": "./assets/images/favicon.png"
     }
   }
 }

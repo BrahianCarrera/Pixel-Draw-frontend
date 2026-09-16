@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, Platform, ToastAndroid } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter } from '../context/router-context';
 import { YStack, XStack, Paragraph, Card } from 'tamagui';
 import { Heart } from '../components/icons';
 import { PixelCanvas } from '../components/canvas/PixelCanvas';

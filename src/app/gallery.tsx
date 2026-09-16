@@ -8,7 +8,7 @@ import {
   useColorScheme,
   Platform,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter } from '../context/router-context';
 import {
   YStack,
   XStack,

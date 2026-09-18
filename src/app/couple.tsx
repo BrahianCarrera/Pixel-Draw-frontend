@@ -320,7 +320,7 @@ export default function CoupleScreen() {
                 icon={<RefreshCw size={16} />}
                 disabled={isLoading}
                 onPress={handleRegenerateCode}
-                accessibilitylabel="Regenerar código"
+                accessibilityLabel="Regenerar código"
               />
             </XStack>
 

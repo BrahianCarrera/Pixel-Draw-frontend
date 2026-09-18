@@ -10,6 +10,7 @@ import { AppState, AppStateStatus } from 'react-native';
 import { api, User, Couple, Artwork, ApiError } from '../services/api';
 import { storage } from '../services/storage';
 import { widgetService } from '../services/widget-service';
+import { registerForPushNotificationsAsync } from '../services/notifications';
 
 interface AuthContextType {
   user: User | null;
@@ -210,6 +211,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     widgetService.updateLatestDrawing(latestArtwork, user?.id);
   }, [latestArtwork, user?.id]);
+
+  // Registrar notificaciones push para actualizar el widget cuando la pareja dibuje
+  useEffect(() => {
+    if (user?.id) {
+      registerForPushNotificationsAsync(user.id);
+    }
+  }, [user?.id]);
 
   const login = async (emailOrUsername: string, password: string) => {
     const data = await api.auth.login({ emailOrUsername, password });

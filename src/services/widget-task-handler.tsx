@@ -58,10 +58,32 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps): Promise<
 
   switch (widgetAction) {
     case 'WIDGET_ADDED':
-    case 'WIDGET_UPDATE':
     case 'WIDGET_RESIZED': {
       const data = await loadAndroidWidgetData();
       renderWidget(<LatestDrawWidgetAndroid {...data} />);
+      break;
+    }
+
+    case 'WIDGET_UPDATE': {
+      // 1. Immediately render cached data to avoid visual lag or blanks
+      const cachedData = await loadAndroidWidgetData();
+      renderWidget(<LatestDrawWidgetAndroid {...cachedData} />);
+
+      // 2. Attempt to query latest drawing from backend
+      try {
+        const token = await storage.getItem('pixeldraw_token');
+        if (token) {
+          const { api } = require('./api');
+          const { widgetService } = require('./widget-service');
+          const syncData = await api.sync.getStatus();
+          if (syncData?.latestArtwork) {
+            await widgetService.updateLatestDrawing(syncData.latestArtwork, syncData.user?.id);
+          }
+        }
+      } catch (e) {
+        // Fallback silently if offline or server is hibernating
+        console.log('[AndroidWidgetTask] Background sync skipped/failed:', e);
+      }
       break;
     }
 

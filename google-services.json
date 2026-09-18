@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "907111307348",
+    "project_id": "pixeldraw-3f771",
+    "storage_bucket": "pixeldraw-3f771.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:907111307348:android:23fc03f1e5b66677f8b5c1",
+        "android_client_info": {
+          "package_name": "com.brahiancx.pixeldraw"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDleo_7GEt9HsPynAMwYTZGKbPE_nqvfFU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

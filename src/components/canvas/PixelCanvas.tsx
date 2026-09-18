@@ -386,7 +386,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
               chromeless={activeTool !== 'pencil'}
               icon={<Paintbrush size={18} />}
               onPress={() => setActiveTool('pencil')}
-              accessibilitylabel="Pincel"
+              accessibilityLabel="Pincel"
             />
             <Button
               size="$3"
@@ -394,7 +394,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
               chromeless={activeTool !== 'eraser'}
               icon={<Eraser size={18} />}
               onPress={() => setActiveTool('eraser')}
-              accessibilitylabel="Borrador"
+              accessibilityLabel="Borrador"
             />
             <Button
               size="$3"
@@ -402,7 +402,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
               chromeless={activeTool !== 'bucket'}
               icon={<PaintBucket size={18} />}
               onPress={() => setActiveTool('bucket')}
-              accessibilitylabel="Bote de pintura"
+              accessibilityLabel="Bote de pintura"
             />
             <Button
               size="$3"
@@ -410,7 +410,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
               chromeless={activeTool !== 'eyedropper'}
               icon={<Pipette size={18} />}
               onPress={() => setActiveTool('eyedropper')}
-              accessibilitylabel="Cuentagotas"
+              accessibilityLabel="Cuentagotas"
             />
           </XStack>
 
@@ -422,7 +422,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
               disabled={history.length === 0}
               opacity={history.length === 0 ? 0.4 : 1}
               onPress={handleUndo}
-              accessibilitylabel="Deshacer"
+              accessibilityLabel="Deshacer"
             />
             <Button
               size="$3"
@@ -430,7 +430,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
               icon={<GridIcon size={18} />}
               theme={showGridLines ? 'active' : undefined}
               onPress={() => setShowGridLines(!showGridLines)}
-              accessibilitylabel="Rejilla"
+              accessibilityLabel="Rejilla"
             />
             <Button
               size="$3"
@@ -438,7 +438,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
               icon={<Trash2 size={18} color="#f43f5e" />}
               theme="red"
               onPress={handleClear}
-              accessibilitylabel="Limpiar"
+              accessibilityLabel="Limpiar"
             />
           </XStack>
         </XStack>
@@ -553,7 +553,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
                     setSelectedColor(color);
                     if (activeTool === 'eraser') setActiveTool('pencil');
                   }}
-                  accessibilitylabel={`Color ${color}`}
+                  accessibilityLabel={`Color ${color}`}
                 />
               );
             })}

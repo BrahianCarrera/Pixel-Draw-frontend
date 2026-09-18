@@ -13,6 +13,7 @@
     },
     "android": {
       "package": "com.brahiancx.pixeldraw",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
@@ -79,10 +80,18 @@
               "description": "Muestra el último dibujo de tu pareja",
               "minWidth": "120dp",
               "minHeight": "120dp",
-              "updatePeriodMillis": 0,
+              "updatePeriodMillis": 1800000,
               "previewImage": ""
             }
           ]
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#e11d48",
+          "defaultChannel": "pixeldraw-drawings"
         }
       ]
     ],

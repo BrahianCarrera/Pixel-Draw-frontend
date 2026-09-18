@@ -445,6 +445,26 @@ export const api = {
     },
   },
 
+  users: {
+    async update(id: number, data: { pushToken?: string; username?: string; email?: string }): Promise<User> {
+      return request(`/users/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      });
+    },
+
+    async savePushToken(userId: number, pushToken: string): Promise<void> {
+      try {
+        await request(`/users/${userId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ pushToken }),
+        });
+      } catch (err) {
+        console.warn('[API] Could not save push token to backend:', err);
+      }
+    },
+  },
+
   sync: {
     async getStatus(): Promise<SyncStatus> {
       return request('/sync', {
@@ -453,3 +473,4 @@ export const api = {
     },
   },
 };
+

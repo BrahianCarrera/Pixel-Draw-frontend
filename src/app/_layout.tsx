@@ -1,5 +1,5 @@
 import * as Font from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
@@ -12,6 +12,8 @@ import { ServerStatusBanner } from '../components/ui/ServerStatusBanner';
 import { PX } from '../constants/pixelTheme';
 import { AuthProvider } from '../context/auth-context';
 import { ServerStatusProvider } from '../context/server-status-context';
+import '../services/notifications';
+import { setupNotificationListeners } from '../services/notifications';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -24,12 +26,22 @@ if (Platform.OS === 'android') {
 }
 
 export default function RootLayout() {
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
   const [fontsLoaded] = Font.useFonts({
     PressStart2P: require('../../assets/fonts/PressStart2P.ttf'),
   });
+
+  useEffect(() => {
+    const cleanup = setupNotificationListeners({
+      onNotificationTapped: () => {
+        router.push('/');
+      },
+    });
+    return cleanup;
+  }, [router]);
 
   useEffect(() => {
     if (fontsLoaded) {

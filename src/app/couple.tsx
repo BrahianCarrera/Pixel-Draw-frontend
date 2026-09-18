@@ -25,6 +25,7 @@ import { Copy, Heart, LogOut, RefreshCw, UserCheck, UserPlus } from '../componen
 import { ThemedInput } from '../components/ui/ThemedInput';
 import { useAuth } from '../context/auth-context';
 import { api } from '../services/api';
+import * as Clipboard from 'expo-clipboard';
 import * as Notifications from 'expo-notifications';
 import { registerForPushNotificationsAsync } from '../services/notifications';
 import { storage } from '../services/storage';
@@ -208,14 +209,18 @@ export default function CoupleScreen() {
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    if (Platform.OS === 'web' && navigator?.clipboard) {
-      navigator.clipboard.writeText(text);
-      alert('¡Código copiado al portapapeles!');
-    } else if (Platform.OS === 'android') {
-      ToastAndroid.show(`Código ${text} copiado al portapapeles ❤️`, ToastAndroid.SHORT);
-    } else {
-      Alert.alert('Código Copiado', `El código ${text} ha sido copiado.`);
+  const copyToClipboard = async (text: string) => {
+    try {
+      await Clipboard.setStringAsync(text);
+      if (Platform.OS === 'android') {
+        ToastAndroid.show('Copiado al portapapeles ❤️', ToastAndroid.SHORT);
+      } else if (Platform.OS === 'web') {
+        alert('Copiado al portapapeles');
+      } else {
+        Alert.alert('Copiado', 'Texto copiado al portapapeles.');
+      }
+    } catch (err: any) {
+      console.warn('[Clipboard] Error al copiar:', err);
     }
   };
 

@@ -1,9 +1,11 @@
 import React from 'react';
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 import { LatestDrawWidgetAndroid } from '../widgets/LatestDrawWidgetAndroid';
+import * as FileSystem from 'expo-file-system/legacy';
 import { storage } from './storage';
 
 const WIDGET_DATA_KEY = 'pixeldraw_widget_data';
+const WIDGET_DATA_FILE = `${FileSystem.documentDirectory ?? ''}pixeldraw_widget_data.json`;
 
 export interface AndroidWidgetData {
   hasDrawing: boolean;
@@ -16,29 +18,49 @@ export interface AndroidWidgetData {
 }
 
 /**
- * Saves widget data to storage so it can be read when the system
- * requests a widget update (e.g. after a reboot).
+ * Saves widget data to file system so it can be read when the system
+ * requests a widget update (e.g. after a reboot or headless task).
+ * Uses FileSystem to avoid Keystore/SecureStore 2KB size limits for base64 images.
  */
 export async function saveAndroidWidgetData(data: AndroidWidgetData): Promise<void> {
   try {
-    await storage.setItem(WIDGET_DATA_KEY, JSON.stringify(data));
+    if (FileSystem.documentDirectory) {
+      await FileSystem.writeAsStringAsync(WIDGET_DATA_FILE, JSON.stringify(data));
+      return;
+    }
   } catch (err) {
-    console.warn('[AndroidWidgetTask] Failed to save widget data:', err);
+    console.warn('[AndroidWidgetTask] Failed to save widget data to file:', err);
   }
+  try {
+    await storage.setItem(WIDGET_DATA_KEY, JSON.stringify(data));
+  } catch {}
 }
 
 /**
- * Reads the last saved widget data from storage.
+ * Reads the last saved widget data from file system or storage.
  */
 export async function loadAndroidWidgetData(): Promise<AndroidWidgetData> {
+  try {
+    if (FileSystem.documentDirectory) {
+      const info = await FileSystem.getInfoAsync(WIDGET_DATA_FILE);
+      if (info.exists) {
+        const raw = await FileSystem.readAsStringAsync(WIDGET_DATA_FILE);
+        if (raw) {
+          return JSON.parse(raw) as AndroidWidgetData;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[AndroidWidgetTask] Failed to load widget data from file:', err);
+  }
+
   try {
     const raw = await storage.getItem(WIDGET_DATA_KEY);
     if (raw) {
       return JSON.parse(raw) as AndroidWidgetData;
     }
-  } catch (err) {
-    console.warn('[AndroidWidgetTask] Failed to load widget data:', err);
-  }
+  } catch {}
+
   return {
     hasDrawing: false,
     title: 'PixelDraw',

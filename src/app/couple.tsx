@@ -25,6 +25,9 @@ import { Copy, Heart, LogOut, RefreshCw, UserCheck, UserPlus } from '../componen
 import { ThemedInput } from '../components/ui/ThemedInput';
 import { useAuth } from '../context/auth-context';
 import { api } from '../services/api';
+import * as Notifications from 'expo-notifications';
+import { registerForPushNotificationsAsync } from '../services/notifications';
+import { storage } from '../services/storage';
 
 export default function CoupleScreen() {
   const router = useRouter();
@@ -35,12 +38,75 @@ export default function CoupleScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
 
+  // Estados de diagnóstico de notificaciones push
+  const [pushToken, setPushToken] = useState<string | null>(null);
+  const [pushStatus, setPushStatus] = useState<string>('Verificando...');
+  const [isTestingPush, setIsTestingPush] = useState(false);
+
+  const checkPushStatus = useCallback(async () => {
+    try {
+      const perms = await Notifications.getPermissionsAsync();
+      setPushStatus(perms.granted ? 'Permitido ✅' : 'Denegado ❌');
+      const savedToken = await storage.getItem('pixeldraw_push_token');
+      if (savedToken) {
+        setPushToken(savedToken);
+      } else if (user?.id) {
+        const token = await registerForPushNotificationsAsync(user.id);
+        setPushToken(token);
+      }
+    } catch (e: any) {
+      setPushStatus(`Error: ${e.message}`);
+    }
+  }, [user?.id]);
+
   // Sincronizar inmediatamente al abrir la pantalla
   useFocusEffect(
     useCallback(() => {
       syncNow();
-    }, [syncNow])
+      checkPushStatus();
+    }, [syncNow, checkPushStatus])
   );
+
+  const handleTestLocalNotification = async () => {
+    try {
+      setIsTestingPush(true);
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: '♥ PixelDraw Prueba Local',
+          body: '¡El sistema de notificaciones de tu teléfono funciona correctamente!',
+          sound: 'default',
+        },
+        trigger: null,
+      });
+      if (Platform.OS === 'android') {
+        ToastAndroid.show('Notificación emitida con éxito', ToastAndroid.SHORT);
+      } else {
+        Alert.alert('Éxito', 'Notificación emitida.');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'No se pudo emitir la notificación');
+    } finally {
+      setIsTestingPush(false);
+    }
+  };
+
+  const handleRefreshPushToken = async () => {
+    setIsTestingPush(true);
+    try {
+      const token = await registerForPushNotificationsAsync(user?.id);
+      setPushToken(token);
+      await checkPushStatus();
+      if (token) {
+        Alert.alert('Token listo', 'Token push obtenido y sincronizado con tu cuenta.');
+      } else {
+        Alert.alert('Aviso', 'No se pudo generar el token. Revisa si concediste los permisos de notificación.');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.message);
+    } finally {
+      setIsTestingPush(false);
+    }
+  };
 
   const isWaitingPartner = couple && (!couple.members || couple.members.length < 2);
 
@@ -399,6 +465,63 @@ export default function CoupleScreen() {
             </Card>
           </YStack>
         )}
+
+        {/* Diagnóstico de Notificaciones Push */}
+        <Card borderWidth={1} borderColor="$borderColor" padding="$3.5" borderRadius="$4" gap="$2.5" backgroundColor="$backgroundHover">
+          <XStack justifyContent="space-between" alignItems="center">
+            <Text fontWeight="bold" fontSize={14} color="#e11d48">
+              🔔 Estado de Notificaciones Push
+            </Text>
+            <Text fontSize={12} color="$colorFocus">
+              {pushStatus}
+            </Text>
+          </XStack>
+
+          <Paragraph size="$1" color="$colorFocus" numberOfLines={2}>
+            {pushToken
+              ? `Token: ${pushToken.slice(0, 30)}...`
+              : 'Token no detectado aún en este dispositivo.'}
+          </Paragraph>
+
+          <XStack gap="$2" flexWrap="wrap">
+            {pushToken && (
+              <Button
+                size="$2"
+                theme="active"
+                flex={1}
+                icon={<Copy size={14} />}
+                onPress={() => {
+                  copyToClipboard(pushToken);
+                  Alert.alert('Token copiado', 'Copiado al portapapeles. Puedes probarlo en https://expo.dev/notifications');
+                }}
+              >
+                Copiar Token
+              </Button>
+            )}
+
+            <Button
+              size="$2"
+              theme="active"
+              backgroundColor="#e11d48"
+              color="white"
+              flex={1}
+              disabled={isTestingPush}
+              onPress={handleTestLocalNotification}
+            >
+              Probar Notificación
+            </Button>
+
+            <Button
+              size="$2"
+              chromeless
+              disabled={isTestingPush}
+              icon={isTestingPush ? <Spinner size="small" /> : <RefreshCw size={14} />}
+              onPress={handleRefreshPushToken}
+            >
+              Re-vincular
+            </Button>
+          </XStack>
+        </Card>
 
         <Separator marginVertical="$3" />
 

@@ -1,36 +1,190 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ScrollView,
-  RefreshControl,
-  TouchableOpacity,
+  Animated,
   Modal,
-  View,
-  StyleSheet,
-  useColorScheme,
   Platform,
-} from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
-import {
-  YStack,
-  XStack,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
   Text,
-  Paragraph,
-  Card,
-  Button,
-  Spinner,
-  H3,
-  Separator,
-} from 'tamagui';
-import { Heart, Plus, Calendar, UserIcon, X, RefreshCw, Star } from '../components/icons';
+  TouchableOpacity,
+  useColorScheme,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { Spinner } from 'tamagui';
+import { PixelPreview } from '../components/canvas/PixelPreview';
+import { Heart, Paintbrush, Plus, RefreshCw, X } from '../components/icons';
+import {
+  PixelBadge,
+  PixelButton,
+  PixelCard,
+  PixelDivider,
+  PixelText,
+} from '../components/ui/Pixel';
+import { PX, pxColors } from '../constants/pixelTheme';
 import { useAuth } from '../context/auth-context';
 import { api, Artwork } from '../services/api';
-import { PixelPreview } from '../components/canvas/PixelPreview';
+import {
+  getDominantColors,
+  getFillPercent,
+  isNew,
+  timeAgo,
+} from '../utils/artworkStats';
+
+// ─── Card with web hover-zoom ─────────────────────────────────────────────────
+
+interface ArtCardProps {
+  art: Artwork;
+  isMine: boolean;
+  onPress: () => void;
+  isDark: boolean;
+  previewSize: number;
+  isSingleCol: boolean;
+}
+
+function ArtCard({ art, isMine, onPress, isDark, previewSize, isSingleCol }: ArtCardProps) {
+  const c = pxColors(isDark);
+
+  // Derived stats (memoised per card instance)
+  const palette  = useMemo(() => getDominantColors(art.grid, 5), [art.grid]);
+  const fillPct  = useMemo(() => getFillPercent(art.grid),       [art.grid]);
+  const ago      = timeAgo(art.createdAt);
+  const fresh    = isNew(art.createdAt);
+  const dims     = `${art.width ?? art.grid[0]?.length ?? '?'}×${art.height ?? art.grid.length ?? '?'}`;
+
+  // Border colour: red = mine, indigo = theirs
+  const borderColor = isMine ? PX.colors.accent : '#6366f1';
+
+  // Web-only hover scale via Animated
+  const scale = useRef(new Animated.Value(1)).current;
+  const onHoverIn  = () =>
+    Platform.OS === 'web' &&
+    Animated.spring(scale, { toValue: 1.04, useNativeDriver: true, speed: 40 }).start();
+  const onHoverOut = () =>
+    Platform.OS === 'web' &&
+    Animated.spring(scale, { toValue: 1,    useNativeDriver: true, speed: 40 }).start();
+
+  return (
+    <Pressable
+      onPress={onPress}
+      // @ts-ignore — onHoverIn/Out are web-only React Native Web props
+      onHoverIn={onHoverIn}
+      onHoverOut={onHoverOut}
+      style={[styles.gridItem, isSingleCol && styles.gridItemFull]}
+    >
+      <Animated.View style={{ transform: [{ scale }] }}>
+        <View
+          style={[
+            styles.gridCard,
+            {
+              backgroundColor: c.bgCard,
+              borderWidth: 2,
+              borderColor,
+              borderRadius: PX.border.radiusSm,
+              // Pixel drop-shadow — matches border color
+              shadowColor: borderColor,
+              shadowOffset: { width: 3, height: 3 },
+              shadowOpacity: 1,
+              shadowRadius: 0,
+              elevation: 4,
+            },
+          ]}
+        >
+          {/* ── Canvas preview (no overlay badges) ───────────────────────── */}
+          <View style={styles.previewWrap}>
+            <PixelPreview grid={art.grid} size={previewSize} borderRadius={0} />
+          </View>
+
+          {/* ── Color palette strip ────────────────────────────────────── */}
+          {palette.length > 0 && (
+            <View style={styles.paletteRow}>
+              {palette.map((color, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.paletteSwatch,
+                    {
+                      backgroundColor: color,
+                      borderColor: c.border,
+                      flex: i === palette.length - 1 ? 1 : 0,
+                    },
+                  ]}
+                />
+              ))}
+            </View>
+          )}
+
+          <PixelDivider />
+
+          {/* ── Meta & Bottom Rows ────────────────────────────────────── */}
+          <View style={[styles.meta, isSingleCol ? styles.metaSingleCol : styles.metaFixed]}>
+            {/* Row 1: Title */}
+            <View style={styles.titleRow}>
+              <PixelText size="xs" numberOfLines={1} style={styles.artTitleText}>
+                {art.name ? art.name.toUpperCase() : 'SIN TÍTULO'}
+              </PixelText>
+            </View>
+
+            {/* Row 2: Badges and TimeAgo */}
+            <View style={styles.badgesBottomRow}>
+              <View style={styles.badgesLeftGroup}>
+                <PixelBadge
+                  label={isMine ? 'TÚ' : (art.author?.username?.toUpperCase() ?? 'PAREJA')}
+                  bgColor={isMine ? PX.colors.accent : '#6366f1'}
+                  color={PX.colors.white}
+                  numberOfLines={1}
+                  style={styles.authorBadge}
+                />
+                {fresh && (
+                  <PixelBadge
+                    label="NEW"
+                    bgColor={PX.colors.gold}
+                    color="#000000"
+                  />
+                )}
+                <View style={[styles.dimsPill, { borderColor: c.border }]}>
+                  <PixelText size="xxs" color={c.textMuted}>
+                    {dims}
+                  </PixelText>
+                </View>
+              </View>
+
+              <PixelText size="xxs" color={c.textMuted} style={styles.timeAgoText} numberOfLines={1}>
+                {ago}
+              </PixelText>
+            </View>
+          </View>
+        </View>
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+// ─── Main screen ─────────────────────────────────────────────────────────────
 
 export default function GalleryScreen() {
   const router = useRouter();
   const { user, couple, latestArtwork, syncNow } = useAuth();
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = colorScheme !== 'light';
+  const c = pxColors(isDark);
+  const { width: windowWidth } = useWindowDimensions();
+
+  // On phones (< 600px wide or non-web), show 1 drawing per row
+  const isSingleCol = Platform.OS !== 'web' || windowWidth < 600;
+  // Dynamic preview size to fill the card nicely
+  const previewSize = useMemo(() => {
+    if (isSingleCol) {
+      // Content has padding around it; leave room for card padding & borders
+      const availableWidth = Math.min(windowWidth - 48, 580);
+      return Math.max(220, Math.floor(availableWidth - 16));
+    }
+    // Web desktop 2-col layout
+    return 180;
+  }, [isSingleCol, windowWidth]);
 
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,11 +192,7 @@ export default function GalleryScreen() {
   const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null);
 
   const fetchArtworks = useCallback(async () => {
-    if (!couple?.id) {
-      setIsLoading(false);
-      return;
-    }
-
+    if (!couple?.id) { setIsLoading(false); return; }
     try {
       const data = await api.artworks.getCoupleArtworks(couple.id, 1, 10);
       setArtworks(data.artworks);
@@ -54,165 +204,125 @@ export default function GalleryScreen() {
     }
   }, [couple?.id]);
 
-  // Recargar al enfocar la pantalla
   useFocusEffect(
-    useCallback(() => {
-      syncNow();
-      fetchArtworks();
-    }, [syncNow, fetchArtworks])
+    useCallback(() => { syncNow(); fetchArtworks(); }, [syncNow, fetchArtworks])
   );
 
-  // Si el auto-sync global detecta un nuevo dibujo, refrescar la lista en tiempo real
   useEffect(() => {
-    if (latestArtwork?.id) {
-      fetchArtworks();
-    }
+    if (latestArtwork?.id) fetchArtworks();
   }, [latestArtwork?.id, fetchArtworks]);
 
-  const onRefresh = () => {
-    setIsRefreshing(true);
-    syncNow();
-    fetchArtworks();
-  };
+  const onRefresh = () => { setIsRefreshing(true); syncNow(); fetchArtworks(); };
 
+  // Selected artwork derived stats for modal
+  const selPalette = useMemo(
+    () => selectedArtwork ? getDominantColors(selectedArtwork.grid, 7) : [],
+    [selectedArtwork]
+  );
+  const selFill = useMemo(
+    () => selectedArtwork ? getFillPercent(selectedArtwork.grid) : 0,
+    [selectedArtwork]
+  );
+
+  // ── Not logged in ─────────────────────────────────────────────────────────
   if (!user) {
     return (
-      <YStack flex={1} justifyContent="center" alignItems="center" padding="$4" gap="$3">
-        <Heart size={48} color="#e11d48" />
-        <H3 textAlign="center">Inicia sesión para ver tu galería</H3>
-        <Button theme="active" backgroundColor="#e11d48" color="white" onPress={() => router.push('/auth')}>
-          Iniciar Sesión
-        </Button>
-      </YStack>
+      <View style={[styles.center, { backgroundColor: c.bg, padding: PX.space.xl }]}>
+        <Heart size={48} color={PX.colors.accent} />
+        <PixelText size="sm" style={{ marginTop: PX.space.lg, textAlign: 'center' }}>
+          INICIA SESIÓN
+        </PixelText>
+        <PixelButton label="ACCEDER" onPress={() => router.push('/auth')} style={{ marginTop: PX.space.lg }} />
+      </View>
     );
   }
 
+  // ── No couple ─────────────────────────────────────────────────────────────
   if (!couple) {
     return (
-      <YStack flex={1} justifyContent="center" alignItems="center" padding="$4" gap="$3">
-        <Heart size={48} color="#e11d48" />
-        <H3 textAlign="center">Aún no estás en una pareja</H3>
-        <Paragraph textAlign="center" color="$colorFocus">
-          Vincula tu cuenta con tu pareja para empezar a compartir dibujos.
-        </Paragraph>
-        <Button theme="active" backgroundColor="#e11d48" color="white" onPress={() => router.push('/couple')}>
-          Vincular Pareja
-        </Button>
-      </YStack>
+      <View style={[styles.center, { backgroundColor: c.bg, padding: PX.space.xl }]}>
+        <Text style={{ fontSize: 48 }}>💕</Text>
+        <PixelText size="sm" style={{ marginTop: PX.space.lg, textAlign: 'center' }}>SIN PAREJA</PixelText>
+        <PixelText size="xxs" color={c.textMuted} style={{ marginTop: PX.space.sm, textAlign: 'center' }}>
+          Vincula tu cuenta para{'\n'}ver la galería compartida
+        </PixelText>
+        <PixelButton label="VINCULAR" onPress={() => router.push('/couple')} style={{ marginTop: PX.space.lg }} />
+      </View>
     );
   }
 
   return (
-    <YStack flex={1} backgroundColor="$background">
+    <View style={[styles.flex, { backgroundColor: c.bg }]}>
       <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 50 }}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={onRefresh}
-            colors={['#e11d48']}
-            progressBackgroundColor={isDark ? '#1e1e24' : '#ffffff'}
+            colors={[PX.colors.accent]}
+            progressBackgroundColor={isDark ? '#1e1e24' : '#f0f0f8'}
+            tintColor={PX.colors.accent}
           />
         }
       >
-        <XStack justifyContent="space-between" alignItems="center" marginBottom="$4">
-          <YStack>
-            <XStack alignItems="center" gap="$1">
-            <H3>Nuestra Galería </H3> 
-            <Star size={24} color="#facc15" />
-            </XStack>
-            <Paragraph size="$2" color="$colorFocus">
-              {artworks.length} {artworks.length === 1 ? 'dibujo compartido' : 'dibujos compartidos'}
-            </Paragraph>
-          </YStack>
-
-          <XStack gap="$2" alignItems="center">
-            <Button
-              size="$3"
-              chromeless
-              icon={isRefreshing ? <Spinner size="small" /> : <RefreshCw size={16} />}
-              disabled={isRefreshing || isLoading}
-              onPress={onRefresh}
-              accessibilityLabel="Actualizar galería"
-            />
-            <Button
-              size="$3"
-              theme="active"
-              backgroundColor="#e11d48"
-              color="white"
-              icon={<Plus size={16} color="white" />}
+        {/* ── Header ──────────────────────────────────────────────────── */}
+        <View style={styles.header}>
+          <View>
+            <PixelText size="md">★ GALERIA</PixelText>
+            <PixelText size="xxs" color={c.textMuted} style={{ marginTop: 6 }}>
+              {artworks.length} {artworks.length === 1 ? 'dibujo' : 'dibujos'}
+            </PixelText>
+          </View>
+          <View style={styles.headerActions}>
+            <TouchableOpacity onPress={onRefresh} disabled={isRefreshing || isLoading}>
+              {isRefreshing || isLoading
+                ? <Spinner size="small" color={PX.colors.accent} />
+                : <RefreshCw size={16} color={c.textMuted} />}
+            </TouchableOpacity>
+            <PixelButton
+              label="NUEVA"
+              size="sm"
               onPress={() => router.push('/draw')}
-            >
-              Nuevo
-            </Button>
-          </XStack>
-        </XStack>
+              icon={<Plus size={12} color={PX.colors.white} />}
+              style={{ marginLeft: PX.space.sm }}
+            />
+          </View>
+        </View>
 
+        {/* ── Grid ──────────────────────────────────────────────────────── */}
         {isLoading ? (
-          <YStack padding="$6" alignItems="center">
-            <Spinner size="large" color="#e11d48" />
-            <Paragraph marginTop="$2">Cargando recuerdos...</Paragraph>
-          </YStack>
+          <View style={styles.center}>
+            <Spinner size="large" color={PX.colors.accent} />
+            <PixelText size="xxs" color={c.textMuted} style={{ marginTop: PX.space.md }}>CARGANDO...</PixelText>
+          </View>
         ) : artworks.length === 0 ? (
-          <Card borderWidth={1} borderColor="$borderColor" padding="$6" alignItems="center" gap="$3" borderRadius="$4">
-            <Heart size={40} color="#fda4af" />
-            <Text fontWeight="bold">Tu galería está vacía</Text>
-            <Paragraph textAlign="center" color="$colorFocus" size="$2">
-              Sé el primero en enviarle un dibujo romántico a tu pareja.
-            </Paragraph>
-            <Button theme="active" backgroundColor="#e11d48" color="white" onPress={() => router.push('/draw')}>
-              Crear Primer Dibujo
-            </Button>
-          </Card>
+          <PixelCard accentBorder style={styles.emptyCard}>
+            <Text style={{ fontSize: 40 }}>🎨</Text>
+            <PixelText size="xs" style={{ marginTop: PX.space.sm }}>GALERÍA VACÍA</PixelText>
+            <PixelText size="xxs" color={c.textMuted} style={styles.emptyBody}>
+              Sé el primero en{'\n'}compartir un dibujo
+            </PixelText>
+            <PixelButton label="CREAR" onPress={() => router.push('/draw')} style={{ marginTop: PX.space.md }} />
+          </PixelCard>
         ) : (
-          <XStack flexWrap="wrap" gap="$3" justifyContent="space-between">
-            {artworks.map((art) => {
-              const isMine = art.authorId === user.id;
-              const dateStr = new Date(art.createdAt).toLocaleDateString('es-ES', {
-                month: 'short',
-                day: 'numeric',
-              });
-
-              return (
-                <TouchableOpacity
-                  key={art.id}
-                  style={styles.cardWrapper}
-                  onPress={() => setSelectedArtwork(art)}
-                  activeOpacity={0.8}
-                >
-                  <Card borderWidth={1} borderColor="$borderColor" padding="$2.5" borderRadius="$4" gap="$2">
-                    <View style={styles.previewContainer}>
-                      <PixelPreview grid={art.grid} size={150} />
-                    </View>
-                    <YStack gap="$1">
-                      <Text fontWeight="bold" numberOfLines={1} fontSize={14}>
-                        {art.name || 'Sin título'}
-                      </Text>
-                      <XStack justifyContent="space-between" alignItems="center">
-                        <XStack alignItems="center" gap="$1">
-                          <UserIcon size={12} color="#888" />
-                          <Paragraph size="$1" color="$colorFocus">
-                            {isMine ? 'Tú' : art.author?.username || 'Pareja'}
-                          </Paragraph>
-                        </XStack>
-                        <XStack alignItems="center" gap="$1">
-                          <Calendar size={12} color="#888" />
-                          <Paragraph size="$1" color="$colorFocus">
-                            {dateStr}
-                          </Paragraph>
-                        </XStack>
-                      </XStack>
-                    </YStack>
-                  </Card>
-                </TouchableOpacity>
-              );
-            })}
-          </XStack>
+          <View style={[styles.grid, isSingleCol && styles.gridSingleCol]}>
+            {artworks.map((art) => (
+              <ArtCard
+                key={art.id}
+                art={art}
+                isMine={art.authorId === user.id}
+                onPress={() => setSelectedArtwork(art)}
+                isDark={isDark}
+                previewSize={previewSize}
+                isSingleCol={isSingleCol}
+              />
+            ))}
+          </View>
         )}
       </ScrollView>
 
-      {/* Modal de Detalle / Zoom */}
+      {/* ── Detail Modal ───────────────────────────────────────────────── */}
       <Modal
         visible={!!selectedArtwork}
         transparent
@@ -221,104 +331,211 @@ export default function GalleryScreen() {
         onRequestClose={() => setSelectedArtwork(null)}
       >
         <TouchableOpacity
-          style={styles.modalBackdrop}
+          style={styles.backdrop}
           activeOpacity={1}
           onPress={() => setSelectedArtwork(null)}
         >
           <TouchableOpacity
             activeOpacity={1}
             onPress={(e) => e.stopPropagation()}
-            style={{ width: '90%', maxWidth: 380 }}
+            style={styles.modalWrap}
           >
-            <Card
-              borderWidth={1}
-              borderColor="$borderColor"
-              backgroundColor={isDark ? '#18181f' : '#ffffff'}
-              padding="$4"
-              width="100%"
-              borderRadius="$4"
-              gap="$3"
-              style={Platform.OS === 'ios' ? { borderCurve: 'continuous' } : undefined}
-            >
-              <XStack justifyContent="space-between" alignItems="center">
-                <H3 numberOfLines={1} flex={1}>
-                  {selectedArtwork?.name || 'Dibujo de Pareja'}
-                </H3>
-                <Button
-                  size="$2"
-                  circular
-                  chromeless
-                  icon={<X size={18} />}
-                  pressStyle={{ opacity: 0.7 }}
-                  onPress={() => setSelectedArtwork(null)}
-                />
-              </XStack>
+            <PixelCard style={styles.modalCard} accentBorder>
+              {/* Header */}
+              <View style={styles.modalHeader}>
+                <PixelText size="sm" numberOfLines={1} style={{ flex: 1 }}>
+                  {selectedArtwork?.name?.toUpperCase() || 'DIBUJO'}
+                </PixelText>
+                {selectedArtwork && isNew(selectedArtwork.createdAt) && (
+                  <View style={{ marginRight: PX.space.sm }}>
+                    <PixelBadge label="NEW" bgColor={PX.colors.gold} color="#000000" />
+                  </View>
+                )}
+                <TouchableOpacity onPress={() => setSelectedArtwork(null)}>
+                  <X size={20} color={c.textMuted} />
+                </TouchableOpacity>
+              </View>
 
-              <View style={styles.modalCanvasContainer}>
+              {/* Canvas */}
+              <View style={styles.modalCanvas}>
                 {selectedArtwork && (
-                  <PixelPreview grid={selectedArtwork.grid} size={280} borderRadius={12} />
+                  <PixelPreview grid={selectedArtwork.grid} size={280} borderRadius={0} />
                 )}
               </View>
 
-              <Separator />
+              {/* Palette strip (7 colors in modal) */}
+              {selPalette.length > 0 && (
+                <View style={[styles.paletteRow, { height: 16, marginTop: -PX.space.xs }]}>
+                  {selPalette.map((color, i) => (
+                    <View
+                      key={i}
+                      style={{
+                        flex: 1,
+                        backgroundColor: color,
+                        borderWidth: 1,
+                        borderColor: c.border,
+                      }}
+                    />
+                  ))}
+                </View>
+              )}
 
-              <YStack gap="$1">
-                <XStack justifyContent="space-between">
-                  <Paragraph size="$2" color="$colorFocus">Creado por:</Paragraph>
-                  <Text fontWeight="bold">
+              <PixelDivider color={PX.colors.accent} />
+
+              {/* Info grid */}
+              <View style={{ gap: PX.space.xs }}>
+                <View style={styles.infoRow}>
+                  <PixelText size="xxs" color={c.textMuted}>AUTOR</PixelText>
+                  <PixelText size="xxs">
                     {selectedArtwork?.authorId === user?.id
-                      ? 'Tú'
-                      : selectedArtwork?.author?.username || 'Tu Pareja'}
-                  </Text>
-                </XStack>
-                <XStack justifyContent="space-between">
-                  <Paragraph size="$2" color="$colorFocus">Fecha:</Paragraph>
-                  <Text>
-                    {selectedArtwork &&
-                      new Date(selectedArtwork.createdAt).toLocaleString('es-ES', {
-                        dateStyle: 'medium',
-                        timeStyle: 'short',
-                      })}
-                  </Text>
-                </XStack>
-              </YStack>
+                      ? 'TÚ'
+                      : selectedArtwork?.author?.username?.toUpperCase() || 'PAREJA'}
+                  </PixelText>
+                </View>
+                <View style={styles.infoRow}>
+                  <PixelText size="xxs" color={c.textMuted}>FECHA</PixelText>
+                  <PixelText size="xxs">
+                    {selectedArtwork && timeAgo(selectedArtwork.createdAt)}
+                  </PixelText>
+                </View>
+                <View style={styles.infoRow}>
+                  <PixelText size="xxs" color={c.textMuted}>TAMAÑO</PixelText>
+                  <PixelText size="xxs">
+                    {selectedArtwork
+                      ? `${selectedArtwork.width ?? selectedArtwork.grid[0]?.length}×${selectedArtwork.height ?? selectedArtwork.grid.length}`
+                      : '—'}
+                  </PixelText>
+                </View>
+                {/* Fill progress bar */}
+                <View style={styles.infoRow}>
+                  <PixelText size="xxs" color={c.textMuted}>RELLENO</PixelText>
+                  <View style={styles.fillBarWrap}>
+                    <View
+                      style={[
+                        styles.fillBarInner,
+                        { width: `${selFill}%` as any, backgroundColor: PX.colors.accent },
+                      ]}
+                    />
+                    <PixelText size="xxs" color={c.textMuted} style={styles.fillPct}>
+                      {selFill}%
+                    </PixelText>
+                  </View>
+                </View>
+              </View>
 
-              <Button
-                theme="active"
-                backgroundColor="#e11d48"
-                color="white"
-                pressStyle={{ opacity: 0.85, scale: 0.98 }}
-                onPress={() => setSelectedArtwork(null)}
-              >
-                Cerrar
-              </Button>
-            </Card>
+              {/* CTAs */}
+              <View style={styles.modalActions}>
+                <PixelButton
+                  label="RESPONDER"
+                  fullWidth
+                  icon={<Paintbrush size={14} color={PX.colors.white} />}
+                  onPress={() => { setSelectedArtwork(null); router.push('/draw'); }}
+                />
+                <PixelButton
+                  label="CERRAR"
+                  variant="secondary"
+                  fullWidth
+                  onPress={() => setSelectedArtwork(null)}
+                />
+              </View>
+            </PixelCard>
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
-    </YStack>
+    </View>
   );
 }
 
+// ─── Styles ──────────────────────────────────────────────────────────────────
+
+const SWATCH_HEIGHT = 10;
+
 const styles = StyleSheet.create({
-  cardWrapper: {
-    width: '48%',
-    marginBottom: 12,
+  flex:          { flex: 1 },
+  center:        { flex: 1, justifyContent: 'center', alignItems: 'center', padding: PX.space.xl },
+  scrollContent: {
+    padding: PX.space.lg,
+    paddingBottom: PX.space['3xl'],
+    // On web: center and cap width so cards don't stretch across the viewport
+    ...(Platform.OS === 'web' && {
+      maxWidth: 700,
+      alignSelf: 'center' as const,
+      width: '100%',
+    }),
   },
-  previewContainer: {
-    alignItems: 'center',
+
+  // Header
+  header:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: PX.space.lg },
+  headerActions: { flexDirection: 'row', alignItems: 'center' },
+
+  // Grid
+  grid:          { flexDirection: 'row', flexWrap: 'wrap', gap: PX.space.md, justifyContent: 'space-between' },
+  gridSingleCol: { flexDirection: 'column', flexWrap: 'nowrap' },
+  gridItem:      { width: '48%', marginBottom: PX.space.md },
+  gridItemFull:  { width: '100%', marginBottom: PX.space.md },
+  gridCard:      { overflow: 'hidden' },
+  previewWrap:   { position: 'relative', alignItems: 'center', justifyContent: 'center' },
+
+  // Color palette strip below preview
+  paletteRow:    { flexDirection: 'row', height: SWATCH_HEIGHT },
+  paletteSwatch: { width: 28, height: SWATCH_HEIGHT, borderWidth: 0.5 },
+
+  // Meta section & Bottom Badges
+  meta:          { padding: PX.space.sm, gap: 6 },
+  metaFixed:     { height: 74, justifyContent: 'space-between' },
+  metaSingleCol: { minHeight: 68, justifyContent: 'space-between' },
+  titleRow: {
+    width: '100%',
+    height: 24,
     justifyContent: 'center',
   },
-  modalBackdrop: {
+  artTitleText: {
+    width: '100%',
+  },
+  badgesBottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    height: 28,
+  },
+  badgesLeftGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    gap: 5,
+    marginRight: 6,
+    overflow: 'hidden',
   },
-  modalCanvasContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
+  authorBadge: {
+    maxWidth: 95,
   },
+  dimsPill: {
+    borderWidth: 1,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: PX.border.radiusSm,
+  },
+  timeAgoText: {
+    flexShrink: 0,
+    textAlign: 'right',
+  },
+
+  // Empty
+  emptyCard: { alignItems: 'center', padding: PX.space.xl, margin: PX.space.lg },
+  emptyBody: { textAlign: 'center', marginTop: PX.space.xs, lineHeight: 18 },
+
+  // Modal
+  backdrop:      { flex: 1, backgroundColor: 'rgba(0,0,0,0.88)', justifyContent: 'center', alignItems: 'center', padding: PX.space.lg },
+  modalWrap:     { width: '100%', maxWidth: 380 },
+  modalCard:     { padding: PX.space.md, gap: PX.space.sm },
+  modalHeader:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  modalCanvas:   { alignItems: 'center', paddingVertical: PX.space.sm },
+  modalActions:  { gap: PX.space.xs, marginTop: PX.space.xs },
+  infoRow:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+
+  // Fill progress bar
+  fillBarWrap:   { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  fillBarInner:  { height: 8, maxWidth: 80, minWidth: 2, borderWidth: 1, borderColor: PX.colors.accentHover },
+  fillPct:       { minWidth: 30, textAlign: 'right' },
 });

@@ -1,30 +1,30 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import {
-  ScrollView,
   Alert,
-  Platform,
-  ToastAndroid,
-  KeyboardAvoidingView,
   Keyboard,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   RefreshControl,
+  ScrollView,
+  ToastAndroid,
 } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
 import {
-  YStack,
-  XStack,
-  Text,
   Button,
   Card,
-  Paragraph,
   H3,
+  Paragraph,
   Separator,
   Spinner,
+  Text,
+  XStack,
+  YStack,
 } from 'tamagui';
-import { Heart, Copy, UserCheck, UserPlus, LogOut, RefreshCw } from '../components/icons';
+import { Copy, Heart, LogOut, RefreshCw, UserCheck, UserPlus } from '../components/icons';
+import { ThemedInput } from '../components/ui/ThemedInput';
 import { useAuth } from '../context/auth-context';
 import { api } from '../services/api';
-import { ThemedInput } from '../components/ui/ThemedInput';
 
 export default function CoupleScreen() {
   const router = useRouter();
@@ -203,6 +203,7 @@ export default function CoupleScreen() {
               disabled={isRefreshing || isLoading}
               onPress={onRefresh}
               accessibilityLabel="Actualizar estado"
+              aria-label="Actualizar estado"
             />
           </XStack>
           <Paragraph size="$2" color="$colorFocus" textAlign="center">
@@ -319,7 +320,7 @@ export default function CoupleScreen() {
                 icon={<RefreshCw size={16} />}
                 disabled={isLoading}
                 onPress={handleRegenerateCode}
-                accessibilityLabel="Regenerar código"
+                accessibilitylabel="Regenerar código"
               />
             </XStack>
 

@@ -1,30 +1,30 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View,
-  StyleSheet,
-  PanResponder,
   GestureResponderEvent,
   LayoutChangeEvent,
+  PanResponder,
   Platform,
   ScrollView,
+  StyleSheet,
   useColorScheme,
+  View,
 } from 'react-native';
 import {
-  YStack,
-  XStack,
   Button,
   Card,
   Paragraph,
   Separator,
+  XStack,
+  YStack,
 } from 'tamagui';
 import {
-  Paintbrush,
   Eraser,
+  GridIcon,
+  Paintbrush,
   PaintBucket,
+  Pipette,
   RotateCcw,
   Trash2,
-  GridIcon,
-  Pipette,
 } from '../icons';
 import { CanvasSurface } from './CanvasSurface';
 import { CanvasSurfaceRef } from './CanvasSurface.types';
@@ -386,7 +386,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
               chromeless={activeTool !== 'pencil'}
               icon={<Paintbrush size={18} />}
               onPress={() => setActiveTool('pencil')}
-              accessibilityLabel="Pincel"
+              accessibilitylabel="Pincel"
             />
             <Button
               size="$3"
@@ -394,7 +394,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
               chromeless={activeTool !== 'eraser'}
               icon={<Eraser size={18} />}
               onPress={() => setActiveTool('eraser')}
-              accessibilityLabel="Borrador"
+              accessibilitylabel="Borrador"
             />
             <Button
               size="$3"
@@ -402,7 +402,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
               chromeless={activeTool !== 'bucket'}
               icon={<PaintBucket size={18} />}
               onPress={() => setActiveTool('bucket')}
-              accessibilityLabel="Bote de pintura"
+              accessibilitylabel="Bote de pintura"
             />
             <Button
               size="$3"
@@ -410,7 +410,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
               chromeless={activeTool !== 'eyedropper'}
               icon={<Pipette size={18} />}
               onPress={() => setActiveTool('eyedropper')}
-              accessibilityLabel="Cuentagotas"
+              accessibilitylabel="Cuentagotas"
             />
           </XStack>
 
@@ -422,7 +422,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
               disabled={history.length === 0}
               opacity={history.length === 0 ? 0.4 : 1}
               onPress={handleUndo}
-              accessibilityLabel="Deshacer"
+              accessibilitylabel="Deshacer"
             />
             <Button
               size="$3"
@@ -430,7 +430,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
               icon={<GridIcon size={18} />}
               theme={showGridLines ? 'active' : undefined}
               onPress={() => setShowGridLines(!showGridLines)}
-              accessibilityLabel="Rejilla"
+              accessibilitylabel="Rejilla"
             />
             <Button
               size="$3"
@@ -438,7 +438,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
               icon={<Trash2 size={18} color="#f43f5e" />}
               theme="red"
               onPress={handleClear}
-              accessibilityLabel="Limpiar"
+              accessibilitylabel="Limpiar"
             />
           </XStack>
         </XStack>
@@ -553,7 +553,7 @@ export const PixelCanvas: React.FC<PixelCanvasProps> = ({
                     setSelectedColor(color);
                     if (activeTool === 'eraser') setActiveTool('pencil');
                   }}
-                  accessibilityLabel={`Color ${color}`}
+                  accessibilitylabel={`Color ${color}`}
                 />
               );
             })}

@@ -176,11 +176,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
   },
-  retryText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
+  // retryText is defined below with pixel font
   // Waking
   wakingContainer: {
     backgroundColor: '#d97706', // amber-600
@@ -190,13 +186,16 @@ const styles = StyleSheet.create({
   },
   wakingTitle: {
     color: '#ffffff',
-    fontSize: 12,
-    fontWeight: 'bold',
+    fontSize: 8,
+    fontFamily: 'PressStart2P',
+    lineHeight: 16,
   },
   wakingSubtitle: {
     color: 'rgba(255, 255, 255, 0.9)',
-    fontSize: 11,
-    marginTop: 1,
+    fontSize: 7,
+    fontFamily: 'PressStart2P',
+    lineHeight: 14,
+    marginTop: 2,
   },
   // Online
   onlineContainer: {
@@ -207,8 +206,9 @@ const styles = StyleSheet.create({
   },
   onlineText: {
     color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 8,
+    fontFamily: 'PressStart2P',
+    lineHeight: 16,
     marginLeft: 8,
   },
   // Offline
@@ -220,12 +220,21 @@ const styles = StyleSheet.create({
   },
   offlineTitle: {
     color: '#ffffff',
-    fontSize: 12,
-    fontWeight: 'bold',
+    fontSize: 8,
+    fontFamily: 'PressStart2P',
+    lineHeight: 16,
   },
   offlineSubtitle: {
     color: 'rgba(255, 255, 255, 0.9)',
-    fontSize: 11,
-    marginTop: 1,
+    fontSize: 7,
+    fontFamily: 'PressStart2P',
+    lineHeight: 14,
+    marginTop: 2,
+  },
+  retryText: {
+    color: '#ffffff',
+    fontSize: 7,
+    fontFamily: 'PressStart2P',
+    lineHeight: 14,
   },
 });

@@ -5,28 +5,30 @@ import {
   Platform,
   Keyboard,
   Pressable,
+  StyleSheet,
+  Text,
   TextInput as RNTextInput,
+  TouchableOpacity,
+  useColorScheme,
+  View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import {
-  YStack,
-  XStack,
-  Text,
-  Button,
-  Card,
-  Paragraph,
-  Tabs,
-  SizableText,
-} from 'tamagui';
-import { Heart } from '../components/icons';
+import { Spinner } from 'tamagui';
 import { useAuth } from '../context/auth-context';
 import { ThemedInput } from '../components/ui/ThemedInput';
+import { PixelButton, PixelCard, PixelDivider, PixelText } from '../components/ui/Pixel';
+import { PX, pxColors } from '../constants/pixelTheme';
+
+type Tab = 'login' | 'register';
 
 export default function AuthScreen() {
   const router = useRouter();
   const { login, register } = useAuth();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme !== 'light';
+  const c = pxColors(isDark);
 
-  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
+  const [activeTab, setActiveTab] = useState<Tab>('login');
   const [emailOrUsername, setEmailOrUsername] = useState('');
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -34,7 +36,7 @@ export default function AuthScreen() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Field refs for fluid keyboard navigation on Android & iOS
+  // Field refs for fluid keyboard navigation
   const loginPasswordRef = useRef<RNTextInput>(null);
   const regUsernameRef = useRef<RNTextInput>(null);
   const regPasswordRef = useRef<RNTextInput>(null);
@@ -42,10 +44,9 @@ export default function AuthScreen() {
   const handleLogin = async () => {
     Keyboard.dismiss();
     if (!emailOrUsername.trim() || !password.trim()) {
-      setErrorMsg('Por favor completa todos los campos.');
+      setErrorMsg('Completa todos los campos.');
       return;
     }
-
     try {
       setIsLoading(true);
       setErrorMsg(null);
@@ -61,15 +62,13 @@ export default function AuthScreen() {
   const handleRegister = async () => {
     Keyboard.dismiss();
     if (!email.trim() || !username.trim() || !password.trim()) {
-      setErrorMsg('Por favor completa todos los campos.');
+      setErrorMsg('Completa todos los campos.');
       return;
     }
-
     if (password.length < 6) {
-      setErrorMsg('La contraseña debe tener al menos 6 caracteres.');
+      setErrorMsg('Contraseña mínimo 6 caracteres.');
       return;
     }
-
     try {
       setIsLoading(true);
       setErrorMsg(null);
@@ -82,188 +81,261 @@ export default function AuthScreen() {
     }
   };
 
+  const switchTab = (tab: Tab) => {
+    setActiveTab(tab);
+    setErrorMsg(null);
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: c.bg }}
     >
       <Pressable onPress={Keyboard.dismiss} accessible={false} style={{ flex: 1 }}>
         <ScrollView
-          contentContainerStyle={{
-            flexGrow: 1,
-            justifyContent: 'center',
-            padding: 20,
-            paddingBottom: Platform.OS === 'android' ? 40 : 20,
-          }}
+          contentContainerStyle={[
+            styles.scroll,
+            { paddingBottom: Platform.OS === 'android' ? 40 : 20 },
+          ]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         >
-          <YStack gap="$4" maxWidth={420} width="100%" alignSelf="center">
-            {/* Encabezado */}
-            <YStack alignItems="center" gap="$2">
-              <XStack alignItems="center" gap="$2">
-                <Heart size={36} color="#e11d48" />
-                <Text fontSize={28} fontWeight="bold" color="#e11d48">
-                  PixelDraw
-                </Text>
-              </XStack>
-              <Paragraph textAlign="center" color="$colorFocus">
-                Comparte dibujos y notas de amor en tiempo real con tu pareja.
-              </Paragraph>
-            </YStack>
+          <View style={styles.inner}>
 
-            {/* Tarjeta de Formulario */}
-            <Card
-              borderWidth={1}
-              borderColor="$borderColor"
-              padding="$4"
-              borderRadius="$4"
-              style={Platform.OS === 'ios' ? { borderCurve: 'continuous' } : undefined}
-            >
-              <Tabs
-                value={activeTab}
-                onValueChange={(val) => {
-                  setActiveTab(val as 'login' | 'register');
-                  setErrorMsg(null);
-                }}
-                orientation="horizontal"
-                flexDirection="column"
-                width="100%"
+            {/* ── Logo / Header ───────────────────────────────────────── */}
+            <View style={styles.logoArea}>
+              <Text style={styles.logoHeart}>♥</Text>
+              <PixelText size="xl" color={PX.colors.accent} style={styles.logoTitle}>
+                PIXEL{'\n'}DRAW
+              </PixelText>
+              <PixelText size="xxs" color={c.textMuted} style={styles.logoSub}>
+                Dibujos de amor en píxeles
+              </PixelText>
+            </View>
+
+            {/* ── Tab switcher ─────────────────────────────────────────── */}
+            <View style={[styles.tabBar, { borderColor: c.border }]}>
+              <TouchableOpacity
+                style={[
+                  styles.tabBtn,
+                  activeTab === 'login' && {
+                    backgroundColor: PX.colors.accent,
+                    borderColor: PX.colors.accentHover,
+                  },
+                  activeTab !== 'login' && { borderColor: 'transparent' },
+                ]}
+                onPress={() => switchTab('login')}
+                activeOpacity={0.8}
               >
-                <Tabs.List marginBottom="$4" width="100%">
-                  <Tabs.Tab flex={1} value="login">
-                    <SizableText>Iniciar Sesión</SizableText>
-                  </Tabs.Tab>
-                  <Tabs.Tab flex={1} value="register">
-                    <SizableText>Crear Cuenta</SizableText>
-                  </Tabs.Tab>
-                </Tabs.List>
+                <PixelText
+                  size="xs"
+                  color={activeTab === 'login' ? PX.colors.white : c.textMuted}
+                >
+                  ENTRAR
+                </PixelText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.tabBtn,
+                  activeTab === 'register' && {
+                    backgroundColor: PX.colors.accent,
+                    borderColor: PX.colors.accentHover,
+                  },
+                  activeTab !== 'register' && { borderColor: 'transparent' },
+                ]}
+                onPress={() => switchTab('register')}
+                activeOpacity={0.8}
+              >
+                <PixelText
+                  size="xs"
+                  color={activeTab === 'register' ? PX.colors.white : c.textMuted}
+                >
+                  CREAR
+                </PixelText>
+              </TouchableOpacity>
+            </View>
 
-                {errorMsg && (
-                  <Card
-                    backgroundColor="rgba(225, 29, 72, 0.15)"
-                    padding="$3"
-                    borderRadius="$3"
-                    marginBottom="$3"
-                  >
-                    <Paragraph color="#f43f5e" size="$2">
-                      {errorMsg}
-                    </Paragraph>
-                  </Card>
-                )}
+            {/* ── Form card ────────────────────────────────────────────── */}
+            <PixelCard accentBorder style={styles.formCard}>
 
-                {/* Pestaña: Iniciar Sesión */}
-                <Tabs.Content value="login">
-                  <YStack gap="$3">
-                    <YStack gap="$1">
-                      <Paragraph size="$2">Correo o Usuario</Paragraph>
-                      <ThemedInput
-                        placeholder="ej. pareja@pixeldraw.io o usuario"
-                        value={emailOrUsername}
-                        onChangeText={setEmailOrUsername}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        returnKeyType="next"
-                        onSubmitEditing={() => loginPasswordRef.current?.focus()}
-                        blurOnSubmit={false}
-                      />
-                    </YStack>
+              {/* Error banner */}
+              {errorMsg && (
+                <View style={styles.errorBanner}>
+                  <PixelText size="xxs" color={PX.colors.danger}>
+                    ✕ {errorMsg}
+                  </PixelText>
+                </View>
+              )}
 
-                    <YStack gap="$1">
-                      <Paragraph size="$2">Contraseña</Paragraph>
-                      <ThemedInput
-                        ref={loginPasswordRef}
-                        placeholder="••••••••"
-                        secureTextEntry
-                        value={password}
-                        onChangeText={setPassword}
-                        returnKeyType="done"
-                        onSubmitEditing={handleLogin}
-                      />
-                    </YStack>
+              {activeTab === 'login' ? (
+                /* ── Login form ─── */
+                <View style={styles.formFields}>
+                  <View>
+                    <PixelText size="xxs" color={c.textMuted} style={styles.label}>
+                      USUARIO O EMAIL
+                    </PixelText>
+                    <ThemedInput
+                      placeholder="pareja@pixeldraw.io"
+                      value={emailOrUsername}
+                      onChangeText={setEmailOrUsername}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      returnKeyType="next"
+                      onSubmitEditing={() => loginPasswordRef.current?.focus()}
+                      blurOnSubmit={false}
+                      borderRadius={PX.border.radiusSm}
+                      borderWidth={PX.border.width}
+                    />
+                  </View>
+                  <View>
+                    <PixelText size="xxs" color={c.textMuted} style={styles.label}>
+                      CONTRASEÑA
+                    </PixelText>
+                    <ThemedInput
+                      ref={loginPasswordRef}
+                      placeholder="••••••••"
+                      secureTextEntry
+                      value={password}
+                      onChangeText={setPassword}
+                      returnKeyType="done"
+                      onSubmitEditing={handleLogin}
+                      borderRadius={PX.border.radiusSm}
+                      borderWidth={PX.border.width}
+                    />
+                  </View>
+                  <PixelButton
+                    label={isLoading ? 'CARGANDO...' : 'ENTRAR →'}
+                    onPress={handleLogin}
+                    disabled={isLoading}
+                    fullWidth
+                    size="lg"
+                    icon={isLoading ? <Spinner size="small" color={PX.colors.white} /> : undefined}
+                  />
+                </View>
+              ) : (
+                /* ── Register form ─── */
+                <View style={styles.formFields}>
+                  <View>
+                    <PixelText size="xxs" color={c.textMuted} style={styles.label}>
+                      EMAIL
+                    </PixelText>
+                    <ThemedInput
+                      placeholder="amor@pixeldraw.io"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      textContentType="emailAddress"
+                      value={email}
+                      onChangeText={setEmail}
+                      returnKeyType="next"
+                      onSubmitEditing={() => regUsernameRef.current?.focus()}
+                      blurOnSubmit={false}
+                      borderRadius={PX.border.radiusSm}
+                      borderWidth={PX.border.width}
+                    />
+                  </View>
+                  <View>
+                    <PixelText size="xxs" color={c.textMuted} style={styles.label}>
+                      USUARIO
+                    </PixelText>
+                    <ThemedInput
+                      ref={regUsernameRef}
+                      placeholder="mi_amor_123"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      value={username}
+                      onChangeText={setUsername}
+                      returnKeyType="next"
+                      onSubmitEditing={() => regPasswordRef.current?.focus()}
+                      blurOnSubmit={false}
+                      borderRadius={PX.border.radiusSm}
+                      borderWidth={PX.border.width}
+                    />
+                  </View>
+                  <View>
+                    <PixelText size="xxs" color={c.textMuted} style={styles.label}>
+                      CONTRASEÑA
+                    </PixelText>
+                    <ThemedInput
+                      ref={regPasswordRef}
+                      placeholder="Mín. 6 caracteres"
+                      secureTextEntry
+                      textContentType="newPassword"
+                      value={password}
+                      onChangeText={setPassword}
+                      returnKeyType="done"
+                      onSubmitEditing={handleRegister}
+                      borderRadius={PX.border.radiusSm}
+                      borderWidth={PX.border.width}
+                    />
+                  </View>
+                  <PixelButton
+                    label={isLoading ? 'CARGANDO...' : 'REGISTRARME →'}
+                    onPress={handleRegister}
+                    disabled={isLoading}
+                    fullWidth
+                    size="lg"
+                    icon={isLoading ? <Spinner size="small" color={PX.colors.white} /> : undefined}
+                  />
+                </View>
+              )}
+            </PixelCard>
 
-                    <Button
-                      marginTop="$2"
-                      theme="active"
-                      backgroundColor="#e11d48"
-                      color="white"
-                      disabled={isLoading}
-                      pressStyle={{ opacity: 0.85, scale: 0.98 }}
-                      onPress={handleLogin}
-                    >
-                      {isLoading ? 'Iniciando sesión...' : 'Entrar'}
-                    </Button>
-                  </YStack>
-                </Tabs.Content>
-
-                {/* Pestaña: Registro */}
-                <Tabs.Content value="register">
-                  <YStack gap="$3">
-                    <YStack gap="$1">
-                      <Paragraph size="$2">Correo Electrónico</Paragraph>
-                      <ThemedInput
-                        placeholder="amor@pixeldraw.io"
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        textContentType="emailAddress"
-                        value={email}
-                        onChangeText={setEmail}
-                        returnKeyType="next"
-                        onSubmitEditing={() => regUsernameRef.current?.focus()}
-                        blurOnSubmit={false}
-                      />
-                    </YStack>
-
-                    <YStack gap="$1">
-                      <Paragraph size="$2">Nombre de Usuario</Paragraph>
-                      <ThemedInput
-                        ref={regUsernameRef}
-                        placeholder="mi_amor_123"
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        value={username}
-                        onChangeText={setUsername}
-                        returnKeyType="next"
-                        onSubmitEditing={() => regPasswordRef.current?.focus()}
-                        blurOnSubmit={false}
-                      />
-                    </YStack>
-
-                    <YStack gap="$1">
-                      <Paragraph size="$2">Contraseña</Paragraph>
-                      <ThemedInput
-                        ref={regPasswordRef}
-                        placeholder="Mínimo 6 caracteres"
-                        secureTextEntry
-                        textContentType="newPassword"
-                        value={password}
-                        onChangeText={setPassword}
-                        returnKeyType="done"
-                        onSubmitEditing={handleRegister}
-                      />
-                    </YStack>
-
-                    <Button
-                      marginTop="$2"
-                      theme="active"
-                      backgroundColor="#e11d48"
-                      color="white"
-                      disabled={isLoading}
-                      pressStyle={{ opacity: 0.85, scale: 0.98 }}
-                      onPress={handleRegister}
-                    >
-                      {isLoading ? 'Registrando...' : 'Registrarme'}
-                    </Button>
-                  </YStack>
-                </Tabs.Content>
-              </Tabs>
-            </Card>
-          </YStack>
+            <PixelText size="xxs" color={c.textMuted} style={styles.footer}>
+              ♥ PixelDraw — hecho con amor
+            </PixelText>
+          </View>
         </ScrollView>
       </Pressable>
     </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({
+  scroll: { flexGrow: 1, justifyContent: 'center', padding: PX.space.xl },
+  inner: {
+    maxWidth: 420,
+    width: '100%',
+    alignSelf: 'center',
+    gap: PX.space.lg,
+  },
+
+  // Logo
+  logoArea: { alignItems: 'center', gap: PX.space.sm },
+  logoHeart: { fontSize: 52 },
+  logoTitle: { textAlign: 'center', lineHeight: 40 },
+  logoSub: { textAlign: 'center' },
+
+  // Tabs
+  tabBar: {
+    flexDirection: 'row',
+    borderWidth: 2,
+    borderRadius: PX.border.radiusSm,
+    overflow: 'hidden',
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: PX.space.sm,
+    alignItems: 'center',
+    borderWidth: 0,
+  },
+
+  // Form
+  formCard: { padding: PX.space.lg },
+  formFields: { gap: PX.space.md },
+  label: { marginBottom: 6 },
+
+  // Error
+  errorBanner: {
+    backgroundColor: 'rgba(239,68,68,0.15)',
+    borderWidth: 2,
+    borderColor: PX.colors.danger,
+    padding: PX.space.sm,
+    marginBottom: PX.space.sm,
+    borderRadius: PX.border.radiusSm,
+  },
+
+  footer: { textAlign: 'center' },
+});

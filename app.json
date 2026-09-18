@@ -25,6 +25,7 @@
       "bundler": "metro"
     },
     "plugins": [
+      "./plugins/withAndroidDuplicateFix",
       "expo-router",
       [
         "expo-splash-screen",
@@ -38,7 +39,7 @@
         "expo-widgets",
         {
           "groupIdentifier": "group.com.brahiancx.pixeldraw",
-          "enableAndroid": true,
+          "enableAndroid": false,
           "widgets": [
             {
               "name": "LatestDrawWidget",
@@ -64,6 +65,22 @@
                 "targetCellHeight": 2,
                 "resizeMode": "both"
               }
+            }
+          ]
+        }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "LatestDrawWidget",
+              "label": "Último Dibujo",
+              "description": "Muestra el último dibujo de tu pareja",
+              "minWidth": "120dp",
+              "minHeight": "120dp",
+              "updatePeriodMillis": 0,
+              "previewImage": ""
             }
           ]
         }

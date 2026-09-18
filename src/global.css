@@ -1,4 +1,8 @@
+/* Import Press Start 2P pixel art font for web */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 :root {
+  --font-pixel: 'Press Start 2P', monospace;
   --font-display:
     Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
     Segoe UI Symbol, Noto Color Emoji;
@@ -6,4 +10,11 @@
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
   --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
   --font-serif: Georgia, 'Times New Roman', serif;
+}
+
+/* Pixel-crisp image rendering for all canvas / preview images */
+img.pixel-art,
+canvas.pixel-art {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }

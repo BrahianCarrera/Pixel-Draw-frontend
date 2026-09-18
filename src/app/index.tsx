@@ -1,44 +1,31 @@
-import React, { useState, useCallback } from 'react';
-import { ScrollView, RefreshControl, View, StyleSheet, useColorScheme } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import {
-  YStack,
-  XStack,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
   Text,
-  Paragraph,
-  Card,
-  Button,
-  Spinner,
-  H2,
-  H4,
-  Separator,
-} from 'tamagui';
-import {
-  Heart,
-  Paintbrush,
-  ImageIcon,
-  Users,
-  Calendar,
-  UserIcon,
-  RefreshCw,
-  ClockFading,
-  Sparkles,
-  X,
-} from '../components/icons';
-import { useAuth } from '../context/auth-context';
+  TouchableOpacity,
+  useColorScheme,
+  View,
+} from 'react-native';
+import { Spinner } from 'tamagui';
 import { PixelPreview } from '../components/canvas/PixelPreview';
+import { Heart, ImageIcon, Paintbrush, RefreshCw, Sparkles, Users, X } from '../components/icons';
+import { PixelBadge, PixelButton, PixelCard, PixelDivider, PixelText } from '../components/ui/Pixel';
+import { PX, pxColors } from '../constants/pixelTheme';
+import { useAuth } from '../context/auth-context';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { user, couple, latestArtwork, syncNow, isLoading: isAuthLoading } = useAuth();
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const insets = useSafeAreaInsets();
+  const isDark = colorScheme !== 'light';
+  const c = pxColors(isDark);
 
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
-  // Sincronizar automáticamente al enfocar la pantalla
+  // Sync on focus
   useFocusEffect(
     useCallback(() => {
       syncNow();
@@ -53,267 +40,301 @@ export default function HomeScreen() {
 
   if (isAuthLoading) {
     return (
-      <YStack flex={1} justifyContent="center" alignItems="center">
-        <Spinner size="large" color="#e11d48" />
-      </YStack>
+      <View style={[styles.center, { backgroundColor: c.bg }]}>
+        <Spinner size="large" color={PX.colors.accent} />
+      </View>
     );
   }
 
-  // Si no está autenticado
+  // ── Not logged in ─────────────────────────────────────────────────────────
   if (!user) {
     return (
-      <YStack flex={1} justifyContent="center" alignItems="center" padding="$4" gap="$4">
-        <Heart size={64} color="#e11d48" />
-        <H2 textAlign="center" color="#e11d48">PixelDraw</H2>
-        <Paragraph textAlign="center" maxWidth={320} color="$colorFocus">
-          Dibuja en tiempo real y comparte notas de amor en píxeles directamente con tu pareja.
-        </Paragraph>
-        <Button
-          size="$4"
-          theme="active"
-          backgroundColor="#e11d48"
-          color="white"
+      <View style={[styles.center, { backgroundColor: c.bg, padding: PX.space.xl }]}>
+        {/* Big pixel heart */}
+        <Text style={styles.bigEmoji}>♥</Text>
+        <PixelText size="xl" color={PX.colors.accent} style={styles.landingTitle}>
+          PIXEL{'\n'}DRAW
+        </PixelText>
+        <PixelText size="xs" color={c.textMuted} style={styles.landingSubtitle}>
+          Dibuja píxeles{'\n'}para tu amor ❤
+        </PixelText>
+        <PixelButton
+          label="INICIAR SESIÓN"
           onPress={() => router.push('/auth')}
-        >
-          Iniciar Sesión / Registrarme
-        </Button>
-      </YStack>
+          size="lg"
+          fullWidth
+          style={{ marginTop: PX.space['2xl'] }}
+        />
+      </View>
     );
   }
 
   const partner = couple?.members?.find((m) => m.id !== user.id);
 
   return (
-    <YStack flex={1} backgroundColor="$background">
+    <View style={[styles.flex, { backgroundColor: c.bg }]}>
       <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={styles.container}
+        style={styles.flex}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={onRefresh}
-            colors={['#e11d48']}
-            progressBackgroundColor={isDark ? '#1e1e24' : '#ffffff'}
+            colors={[PX.colors.accent]}
+            progressBackgroundColor={isDark ? '#1e1e24' : '#f0f0f8'}
+            tintColor={PX.colors.accent}
           />
         }
       >
-      <YStack gap="$4" maxWidth={480} width="100%" alignSelf="center">
-        {/* Banner superior de Estado de Pareja */}
-        <Card borderWidth={1} borderColor="$borderColor" padding="$3" borderRadius="$4">
-          <XStack justifyContent="space-between" alignItems="center">
-            <YStack gap="$1">
-              <XStack>
-              <Text fontSize={20} fontWeight="bold">
-                ¡Hola, @{user.username}! 
-              </Text>
-              <Sparkles size={24} color="#facc15" style={{ marginLeft: 4, marginTop: 2 }} />
-              </XStack>
-              
-              <XStack alignItems="center" gap="$1">
-              {partner ? (
-                <XStack alignItems="center" gap="$2">
-                <Heart size={16} color="#e11d48" /> 
-                <Paragraph size="$2" color="$colorFocus">
-                  Estás vinculado con @{partner.username}
-                </Paragraph>
-              </XStack>
-              ) : (
-                <XStack alignItems="center" gap="$2">
-                <X size={16} color="#e11d48" /> 
-                <Paragraph size="$2" color="$colorFocus">
-                  Aún no tienes pareja vinculada.
-              </Paragraph>
-                </XStack>
-              )}
-              
-              </XStack>
-            </YStack>
+        <View style={styles.inner}>
 
-            <Button
-              size="$2"
-              theme="active"
-              chromeless
-              icon={<Users size={24} />}
-              onPress={() => router.push('/couple')}
-            >
-              Pareja
-            </Button>
-          </XStack>
-        </Card>
-
-        {/* Tarjeta Principal: Último dibujo de la pareja */}
-        <YStack gap="$2">
-          <XStack justifyContent="space-between" alignItems="center">
-            <XStack alignItems="center" gap="$2">
-              <ClockFading size={18} color="#e11d48" />
-              <H4>Ultimo Dibujo</H4>
-            </XStack>
-            <XStack alignItems="center" gap="$1">
-              <Button
-                size="$2"
-                chromeless
-                icon={isRefreshing ? <Spinner size="small" /> : <RefreshCw size={14} />}
-                disabled={isRefreshing}
-                onPress={onRefresh}
-                accessibilityLabel="Actualizar lienzo"
-              />
-              {latestArtwork && (
-                <Button
-                  size="$2"
-                  chromeless
-                  onPress={() => router.push('/gallery')}
-                >
-                  Ver galería
-                </Button>
-              )}
-            </XStack>
-          </XStack>
-
-          {!couple ? (
-            <Card borderWidth={1} borderColor="$borderColor" padding="$5" alignItems="center" gap="$3" borderRadius="$4">
-              <Heart size={36} color="#fda4af" />
-              <Text fontWeight="bold" textAlign="center">
-                Vincula tu cuenta para compartir dibujos
-              </Text>
-              <Paragraph textAlign="center" color="$colorFocus" size="$2">
-                Genera un código o ingresa el de tu pareja para sincronizar su lienzo.
-              </Paragraph>
-              <Button
-                theme="active"
-                backgroundColor="#e11d48"
-                color="white"
-                onPress={() => router.push('/couple')}
-              >
-                Vincular Pareja
-              </Button>
-            </Card>
-          ) : latestArtwork ? (
-            <Card borderWidth={1} borderColor="$borderColor" padding="$3.5" borderRadius="$4" gap="$3">
-              <View style={styles.previewCenter}>
-                <PixelPreview grid={latestArtwork.grid} size={280} borderRadius={10} />
+          {/* ── Status card ─────────────────────────────────────────────── */}
+          <PixelCard style={styles.statusCard}>
+            <View style={styles.statusRow}>
+              <View style={styles.statusLeft}>
+                <View style={styles.usernameRow}>
+                  <PixelText size="sm" color={PX.colors.accent}>
+                    @{user.username}
+                  </PixelText>
+                  <Sparkles size={16} color={PX.colors.gold} style={{ marginLeft: 6 }} />
+                </View>
+                <View style={styles.partnerRow}>
+                  {partner ? (
+                    <>
+                      <Heart size={12} color={PX.colors.accent} />
+                      <PixelText size="xxs" color={c.textMuted} style={{ marginLeft: 6 }}>
+                        con @{partner.username}
+                      </PixelText>
+                    </>
+                  ) : (
+                    <>
+                      <X size={12} color={PX.colors.textDim} />
+                      <PixelText size="xxs" color={c.textMuted} style={{ marginLeft: 6 }}>
+                        sin pareja vinculada
+                      </PixelText>
+                    </>
+                  )}
+                </View>
               </View>
 
-              <Separator />
-
-              <XStack justifyContent="space-between" alignItems="center">
-                <YStack gap="$1">
-                  <Text fontWeight="bold" fontSize={16}>
-                    {latestArtwork.name || 'Dibujo de amor'}
-                  </Text>
-                  <XStack gap="$3">
-                    <XStack alignItems="center" gap="$1">
-                      <UserIcon size={12} color="#888" />
-                      <Paragraph size="$1" color="$colorFocus">
-                        {latestArtwork.authorId === user.id
-                          ? 'Tú'
-                          : latestArtwork.author?.username || 'Tu Pareja'}
-                      </Paragraph>
-                    </XStack>
-                    <XStack alignItems="center" gap="$1">
-                      <Calendar size={12} color="#888" />
-                      <Paragraph size="$1" color="$colorFocus">
-                        {new Date(latestArtwork.createdAt).toLocaleDateString('es-ES', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </Paragraph>
-                    </XStack>
-                  </XStack>
-                </YStack>
-
-                <Button
-                  size="$3"
-                  theme="active"
-                  backgroundColor="#e11d48"
-                  color="white"
-                  icon={<Paintbrush size={24} color="white" />}
-                  
-                  onPress={() => router.push('/draw')}
-                >
-                  Responder
-                </Button>
-              </XStack>
-            </Card>
-          ) : (
-            <Card borderWidth={1} borderColor="$borderColor" padding="$5" alignItems="center" gap="$3" borderRadius="$4">
-              <Heart size={40} color="#fda4af" />
-              <Text fontWeight="bold">El lienzo está esperando su primer dibujo</Text>
-              <Paragraph textAlign="center" color="$colorFocus" size="$2">
-                Dibuja algo lindo para que aparezca aquí cuando tu pareja abra la app.
-              </Paragraph>
-              <Button
-                theme="active"
-                backgroundColor="#e11d48"
-                color="white"
-                icon={<Paintbrush size={24} color="white" />}
-                onPress={() => router.push('/draw')}
+              <TouchableOpacity
+                onPress={() => router.push('/couple')}
+                style={[styles.iconBtn, { borderColor: c.border }]}
               >
-                Crear Primer Dibujo
-              </Button>
-            </Card>
+                <Users size={18} color={PX.colors.accent} />
+              </TouchableOpacity>
+            </View>
+          </PixelCard>
+
+          {/* ── Section header ──────────────────────────────────────────── */}
+          <View style={styles.sectionHeader}>
+            <PixelText size="xs" color={c.text}>
+              ULTIMO DIBUJO
+            </PixelText>
+            <View style={styles.sectionActions}>
+              <TouchableOpacity onPress={onRefresh} disabled={isRefreshing}>
+                {isRefreshing ? (
+                  <Spinner size="small" color={PX.colors.accent} />
+                ) : (
+                  <RefreshCw size={14} color={c.textMuted} />
+                )}
+              </TouchableOpacity>
+              
+            </View>
+          </View>
+
+          {/* ── Main artwork area ────────────────────────────────────────── */}
+          {!couple ? (
+            // No couple linked
+            <PixelCard accentBorder style={styles.emptyCard}>
+              <Text style={styles.emptyEmoji}>💕</Text>
+              <PixelText size="xs" color={PX.colors.accent} style={styles.emptyTitle}>
+                VINCULA TU CUENTA
+              </PixelText>
+              <PixelText size="xxs" color={c.textMuted} style={styles.emptyBody}>
+                Genera un código{'\n'}y compártelo con tu pareja
+              </PixelText>
+              <PixelButton
+                label="VINCULAR"
+                onPress={() => router.push('/couple')}
+                style={{ marginTop: PX.space.md }}
+              />
+            </PixelCard>
+          ) : latestArtwork ? (
+            // Has artwork
+            <PixelCard style={styles.artCard}>
+              {/* Author badge */}
+              <View style={styles.artBadgeRow}>
+                {latestArtwork.authorId === user.id ? (
+                  <PixelBadge label="TÚ" bgColor={PX.colors.accent} />
+                ) : (
+                  <PixelBadge
+                    label={latestArtwork.author?.username?.toUpperCase() ?? 'PAREJA'}
+                    bgColor={PX.colors.bgCard}
+                    color={PX.colors.accent}
+                  />
+                )}
+                <PixelText size="xxs" color={c.textMuted}>
+                  {new Date(latestArtwork.createdAt).toLocaleDateString('es-ES', {
+                    day: 'numeric',
+                    month: 'short',
+                  })}
+                </PixelText>
+              </View>
+
+              {/* Canvas preview */}
+              <View style={styles.canvasWrap}>
+                <PixelPreview grid={latestArtwork.grid} size={280} borderRadius={0} />
+                {/* Pixel corner decorations */}
+                <View style={[styles.corner, styles.cornerTL, { borderColor: PX.colors.accent }]} />
+                <View style={[styles.corner, styles.cornerTR, { borderColor: PX.colors.accent }]} />
+                <View style={[styles.corner, styles.cornerBL, { borderColor: PX.colors.accent }]} />
+                <View style={[styles.corner, styles.cornerBR, { borderColor: PX.colors.accent }]} />
+              </View>
+
+              <PixelDivider />
+
+              {/* Title + CTA */}
+              <View style={styles.artMeta}>
+                <PixelText size="xs" color={c.text} numberOfLines={1} style={styles.artTitle}>
+                  {latestArtwork.name || 'DIBUJO DE AMOR'}
+                </PixelText>
+                <PixelButton
+                  label="RESPONDER"
+                  onPress={() => router.push('/draw')}
+                  size="sm"
+                  icon={<Paintbrush size={14} color={PX.colors.white} />}
+                />
+              </View>
+            </PixelCard>
+          ) : (
+            // Coupled but no artwork yet
+            <PixelCard accentBorder style={styles.emptyCard}>
+              <Text style={styles.emptyEmoji}>🎨</Text>
+              <PixelText size="xs" color={c.text} style={styles.emptyTitle}>
+                LIENZO VACÍO
+              </PixelText>
+              <PixelText size="xxs" color={c.textMuted} style={styles.emptyBody}>
+                ¡Sé el primero en{'\n'}dibujar algo lindo!
+              </PixelText>
+              <PixelButton
+                label="CREAR"
+                onPress={() => router.push('/draw')}
+                icon={<Paintbrush size={14} color={PX.colors.white} />}
+                style={{ marginTop: PX.space.md }}
+              />
+            </PixelCard>
           )}
-        </YStack>
+        </View>
+      </ScrollView>
 
-      </YStack>
-    </ScrollView>
-
-    {/* Barra inferior fija de Accesos Rápidos respetando la navbar / safe area */}
-    <YStack
-      borderTopWidth={1}
-      borderTopColor="$borderColor"
-      backgroundColor={isDark ? '#121214' : '#ffffff'}
-      paddingHorizontal="$4"
-      paddingTop="$3"
-      paddingBottom={12}
-      style={styles.bottomBar}
-    >
-      <XStack gap="$2" maxWidth={480} width="100%" alignSelf="center">
-        <Button
-          flex={1}
-          size="$4"
-          theme="active"
-          backgroundColor="#e11d48"
-          color="white"
-          icon={<Paintbrush size={24} color="white" />}
-          onPress={() => router.push('/draw')}
-        >
-          Dibujar
-        </Button>
-        <Button
-          flex={1}
-          size="$4"
-          borderWidth={1}
-          borderColor="$borderColor"
-          icon={<ImageIcon size={24} />}
-          onPress={() => router.push('/gallery')}
-        >
-          Galería
-        </Button>
-      </XStack>
-    </YStack>
-  </YStack>
+      {/* ── Bottom action bar ───────────────────────────────────────────── */}
+      <View
+        style={[
+          styles.bottomBar,
+          {
+            backgroundColor: isDark ? '#111118' : '#f0f0f8',
+            borderTopColor: PX.colors.accent,
+          },
+        ]}
+      >
+        <View style={styles.bottomInner}>
+          <PixelButton
+            label="DIBUJAR"
+            onPress={() => router.push('/draw')}
+            size="lg"
+            fullWidth={false}
+            icon={<Paintbrush size={16} color={PX.colors.white} />}
+            style={styles.bottomBtn}
+          />
+          <PixelButton
+            label="GALERIA"
+            variant="secondary"
+            onPress={() => router.push('/gallery')}
+            size="lg"
+            fullWidth={false}
+            icon={<ImageIcon size={16} color={PX.colors.accent} />}
+            style={styles.bottomBtn}
+          />
+        </View>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    paddingBottom: 24,
-  },
-  previewCenter: {
+  flex: { flex: 1 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  scrollContent: { padding: PX.space.lg, paddingBottom: PX.space['2xl'] },
+  inner: { maxWidth: 480, width: '100%', alignSelf: 'center', gap: PX.space.lg },
+
+  // Landing
+  landingTitle: { textAlign: 'center', marginTop: PX.space.md, lineHeight: 40 },
+  landingSubtitle: { textAlign: 'center', marginTop: PX.space.md },
+  bigEmoji: { fontSize: 64 },
+
+  // Status card
+  statusCard: { padding: PX.space.md },
+  statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  statusLeft: { gap: 6 },
+  usernameRow: { flexDirection: 'row', alignItems: 'center' },
+  partnerRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderWidth: 2,
+    borderRadius: PX.border.radiusSm,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
   },
+
+  // Section header
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sectionActions: { flexDirection: 'row', alignItems: 'center' },
+
+  // Empty card
+  emptyCard: { alignItems: 'center', padding: PX.space.xl, gap: PX.space.sm },
+  emptyEmoji: { fontSize: 48, marginBottom: PX.space.xs },
+  emptyTitle: { textAlign: 'center' },
+  emptyBody: { textAlign: 'center', lineHeight: 20 },
+
+  // Art card
+  artCard: { padding: PX.space.md, gap: PX.space.sm },
+  artBadgeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  canvasWrap: { position: 'relative', alignItems: 'center' },
+  artMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  artTitle: { flex: 1, marginRight: PX.space.sm },
+
+  // Pixel corner decorations
+  corner: { position: 'absolute', width: 12, height: 12, borderWidth: 2 },
+  cornerTL: { top: -2, left: -2, borderRightWidth: 0, borderBottomWidth: 0 },
+  cornerTR: { top: -2, right: -2, borderLeftWidth: 0, borderBottomWidth: 0 },
+  cornerBL: { bottom: -2, left: -2, borderRightWidth: 0, borderTopWidth: 0 },
+  cornerBR: { bottom: -2, right: -2, borderLeftWidth: 0, borderTopWidth: 0 },
+
+  // Bottom bar
   bottomBar: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 8,
+    borderTopWidth: 2,
+    paddingHorizontal: PX.space.lg,
+    paddingVertical: PX.space.sm,
+    paddingBottom: PX.space.md,
   },
+  bottomInner: {
+    flexDirection: 'row',
+    gap: PX.space.sm,
+    maxWidth: 480,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  bottomBtn: { flex: 1 },
 });
